@@ -1,7 +1,7 @@
 # -------------------------------
 # Backend (Python / FastAPI)
 # -------------------------------
-backend/__pycache__/
+backend/app/__pycache__/
 backend/*.pyc
 backend/*.pyo
 backend/*.pyd
