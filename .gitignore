@@ -1,0 +1,39 @@
+# -------------------------------
+# Backend (Python / FastAPI)
+# -------------------------------
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+
+# SQLite databases
+backend/*.db
+backend/*.sqlite3
+
+# Virtual environment
+backend/venv/
+backend/.env
+backend/*.env
+
+# Logs
+backend/*.log
+
+# -------------------------------
+# Frontend (Node.js / React/Vite)
+# -------------------------------
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.npm/
+frontend/.pnpm-store/
+frontend/.env
+frontend/*.log
+
+# -------------------------------
+# Common (IDE / OS)
+# -------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
