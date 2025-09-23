@@ -24,7 +24,7 @@ const Controls = ({ running, setRunning, stop, refreshData, uavs }) => {
         </div>
       </div>
       <button className="btn-generic rounded-pill" onClick={refreshData}>Refresh from API</button>
-      <div style={{ marginLeft: "auto" }}>
+      <div className="text-white opacity-75" style={{ marginLeft: "auto" }}>
         <strong>UAVs:</strong> {uavs.length}
       </div>
     </div>
