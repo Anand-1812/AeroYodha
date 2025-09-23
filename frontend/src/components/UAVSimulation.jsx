@@ -1,11 +1,26 @@
-import React from 'react'
-import UAVMap from "./map/UAVMap"
+import React from "react";
+import { useSimulation } from "./simulation/useSimulation";
+import Controls from "./controls/Controls";
+import UAVMap from "./map/UAVMap";
 
+const UAVSimulation = () => {
+  const sim = useSimulation();
+  const { uavs, geofences, running, setRunning, stop, refreshData } = sim;
 
-function UAVsimulation() {
-    return ( <>
-    <UAVMap></UAVMap>
-    </> );
-}
+  return (
+    <div style={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <Controls
+        running={running}
+        setRunning={setRunning}
+        stop={stop}
+        refreshData={refreshData}
+        uavs={uavs}
+      />
+      <div style={{ flex: 1 }}>
+        <UAVMap uavs={uavs} geofences={geofences} />
+      </div>
+    </div>
+  );
+};
 
-export default UAVsimulation;
+export default UAVSimulation;

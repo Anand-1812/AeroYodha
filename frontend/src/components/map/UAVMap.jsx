@@ -15,7 +15,16 @@ L.Icon.Default.mergeOptions({
 export default function basic_map() {
   return (
     <div className='d-flex' style={{ height: '100vh', width: '100%' }}>
-      <MapContainer className='mapcontainer' center={[28.6139, 77.209]} zoom={12} style={{ height: '100%', width: '100%', border: "1px solid black"}}>
+      <MapContainer className='mapcontainer'
+       center={[28.6139, 77.209]}
+       zoom={13} 
+       style={{ height: '100%', width: '100%', border: "1px solid black"}} 
+       zoomControl={false}
+       scrollWheelZoom={false}
+       doubleClickZoom={false}
+       touchZoom={false}
+       dragging={false}
+       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
