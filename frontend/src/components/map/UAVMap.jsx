@@ -18,7 +18,7 @@ export default function basic_map() {
       <MapContainer className='mapcontainer'
        center={[28.6139, 77.209]}
        zoom={13} 
-       style={{ height: '100%', width: '100%', border: "1px solid black"}} 
+       style={{ height: '100%', width: '90%'}} 
        zoomControl={false}
        scrollWheelZoom={false}
        doubleClickZoom={false}
@@ -34,7 +34,7 @@ export default function basic_map() {
         </Marker>
       </MapContainer>
       <div className='right_panel ms-5'> 
-        <h2>Aeroyodha</h2>
+        
       </div>
     </div>
   );
