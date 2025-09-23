@@ -12,10 +12,38 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-*{
+/* *{
   border-style: solid;
   border-width: 1px;
   border-color: red;
+} */
+
+.str-btn{
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  border: none;
+  padding: 10px 40px; 
+  border-radius: 9999px; 
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.1px;
+  box-shadow: 0 5px 15px rgba(34, 197, 94, 0.6);
+  transition: all 0.3s ease;
+}
+.end-btn{
+  background: linear-gradient(135deg, #ff4e50, #f43f5e); 
+  border: none;
+  padding: 7px 40px;
+  border-radius: 9999px;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(244, 63, 94, 0.45);
+  transition: all 0.25s ease-in-out;
+  
 }
 
 a {
@@ -41,7 +69,7 @@ button {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
-  font-size: 1em;
+  font-size: 1rem;
   font-weight: 500;
   font-family: inherit;
   background-color: #1a1a1a;

@@ -18,7 +18,7 @@ export default function basic_map() {
       <MapContainer className='mapcontainer'
        center={[28.6139, 77.209]}
        zoom={13} 
-       style={{ height: '100%', width: '90%'}} 
+       style={{ height: '100%', width: '100%'}} 
        zoomControl={false}
        scrollWheelZoom={false}
        doubleClickZoom={false}
@@ -33,9 +33,6 @@ export default function basic_map() {
           <Popup>Hello Delhi!</Popup>
         </Marker>
       </MapContainer>
-      <div className='right_panel ms-5'> 
-        
-      </div>
     </div>
   );
 }

@@ -8,20 +8,23 @@ const UAVSimulation = () => {
   const { uavs, geofences, running, setRunning, stop, refreshData } = sim;
 
   return (
-    <div style={{ height: "100vh", display: "flex"}}>
-        <div style={{ flex: 1 }}>
+  <div className="container-fluid h-100">
+    <div className="row h-100 g-0">
+      <div className="col-9">
         <UAVMap uavs={uavs} geofences={geofences} />
       </div>
-      <Controls
-        running={running}
-        setRunning={setRunning}
-        stop={stop}
-        refreshData={refreshData}
-        uavs={uavs}
-      />
-      
+      <div className="col-3">
+        <Controls
+          running={running}
+          setRunning={setRunning}
+          stop={stop}
+          refreshData={refreshData}
+          uavs={uavs}
+        />
+      </div>
     </div>
-  );
+  </div>
+);
 };
 
 export default UAVSimulation;
