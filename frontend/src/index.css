@@ -12,6 +12,11 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+*{
+  border-style: solid;
+  border-width: 1px;
+  border-color: red;
+}
 
 a {
   font-weight: 500;
@@ -23,16 +28,13 @@ a:hover {
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: #0f0f0f;
 }
 
-h1 {
+h1,h2{
   font-size: 3.2em;
   line-height: 1.1;
+  color: #f9f9f9;
 }
 
 button {
@@ -65,4 +67,8 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.display{
+  display: flex;
 }
