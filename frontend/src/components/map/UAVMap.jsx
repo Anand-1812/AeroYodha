@@ -7,7 +7,7 @@ import {
   Polyline,
 } from "react-leaflet";
 import L from "leaflet";
-import herodrone from "../../../public/hero-drone.png";
+import herodrone from "../../assets/hero-drone.png";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
 
 function gen_position() {
