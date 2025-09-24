@@ -2,7 +2,7 @@
 # Simulation (Python)
 # -------------------------------
 
-UAV_Traffic/scripts/__pycache__
+UAV_Traffic/scripts/__pycache/
 
 # -------------------------------
 # Backend (Python / FastAPI)
