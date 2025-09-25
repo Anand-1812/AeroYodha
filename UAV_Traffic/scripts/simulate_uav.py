@@ -40,6 +40,7 @@ def build_random_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=42):
                 G.add_edge(a, b, weight=dist)
     return G, pos
 
+
 # -------------------------------
 # UAV class
 # -------------------------------

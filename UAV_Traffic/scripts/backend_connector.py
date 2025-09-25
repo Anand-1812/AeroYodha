@@ -2,7 +2,7 @@ import requests
 import json
 
 
-def send_data_to_backend(uavs, step, url):
+def send_data_to_backend(uavs, step, url="https://localhost:8000//api/v1/uavs/"):
     data = {
         "step": step,
         "uavs": [
