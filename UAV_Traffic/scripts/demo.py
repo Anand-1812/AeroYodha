@@ -5,11 +5,13 @@ import networkx as nx
 from simulate_uav import build_random_graph, UAV
 from visualization_helper import draw_graph_with_path
 from path_planning import path_length
+from backend_connector import send_data_to_backend, log_state
 
 # Configure your no-fly nodes/edges here (keep nodes present but penalized)
 NOFLY_NODES = ["N13", "N4"]   # change as you like (must match node IDs generated)
 NOFLY_EDGES = []             # e.g. [("N2","N5")]
 VERY_HIGH = 10**6
+
 
 def apply_nofly_penalties(G, nofly_nodes=None, nofly_edges=None, penalty=VERY_HIGH):
     nofly_nodes = nofly_nodes or []
@@ -26,6 +28,7 @@ def apply_nofly_penalties(G, nofly_nodes=None, nofly_edges=None, penalty=VERY_HI
         if G.has_edge(u, v):
             G[u][v]['weight'] = penalty
             G[v][u]['weight'] = penalty
+
 
 def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42):
     G, pos = build_random_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=seed)
@@ -92,6 +95,7 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
             break
 
     plt.show()
+
 
 if __name__ == "__main__":
     merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42)

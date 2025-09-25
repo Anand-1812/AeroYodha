@@ -38,7 +38,9 @@ uavRouter.post("/", async (req, res) => {
 // Update UAV
 uavRouter.put("/:id", async (req, res) => {
   try {
-    const uav = await UAV.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const uav = await UAV.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
     if (!uav) return res.status(404).json({ message: "UAV not found" });
     res.json(uav);
   } catch (err) {
@@ -58,4 +60,3 @@ uavRouter.delete("/:id", async (req, res) => {
 });
 
 export default uavRouter;
-
