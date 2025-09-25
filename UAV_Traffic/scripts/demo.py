@@ -1,4 +1,3 @@
-# scripts/implementation.py
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -54,13 +53,10 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
             g = random.choice(candidate_nodes)
         goals.append(g)
 
-    # create UAVs and compute initial paths
     uavs = []
     for i in range(num_uavs):
-        u = UAV(i, starts[i], goals[i], pos, G, speed=1.2)
-        ok = u.compute_path(algo=planner_algo)
-        if not ok:
-            print(f"Warning: UAV {i} no initial path from {starts[i]} to {goals[i]}")
+        u = UAV(i, starts[i], goals[i], pos, G, speed=1.2 + random.random())
+        u.compute_path(algo=planner_algo)
         uavs.append(u)
 
     # debug print of assignments
@@ -74,7 +70,15 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
     steps = int(sim_time / dt)
 
     for step in range(steps):
-        node_reservation = {u.cur_node: u.id for u in uavs if not u.reached}
+        ax.clear()
+
+        # Draw base graph
+        draw_graph_with_path(G, pos, nofly_nodes=nofly_nodes, ax=ax)
+
+        # Node reservation with priority: lower id wins
+        node_reservation = {}
+        for u in sorted(uavs, key=lambda x: x.id):
+            node_reservation[u.cur_node] = u.id
 
         # move UAVs
         for u in uavs:
@@ -82,37 +86,25 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
 
         # replanning if stuck
         for u in uavs:
-            u.replan_if_stuck(node_reservation, wait_threshold=3)
+            ax.scatter(u.pos[0], u.pos[1], color="blue", s=120, zorder=5)
+            ax.text(u.pos[0]+0.1, u.pos[1]+0.1, f"U{u.id}", fontsize=8)
 
-        # prepare snapshot for backend/log
-        snapshot = [{"id": u.id, "pos": u.pos, "goal": u.goal_node, "reached": u.reached} for u in uavs]
-
-        # send and log
-        send_data_to_backend(snapshot, step)
-        log_state(step, snapshot)
-
-        # live visualization
+        # Visualization per step
         ax.clear()
-        draw_graph_with_path(G, pos, path=None, start=None, goal=None,
-                             nofly_nodes=NOFLY_NODES, nofly_edges=NOFLY_EDGES, ax=ax)
+        draw_graph_with_path(G, pos, path=None, start=None, goal=None, nofly_nodes=NOFLY_NODES, nofly_edges=NOFLY_EDGES, ax=ax)
         xs = [u.pos[0] for u in uavs]
         ys = [u.pos[1] for u in uavs]
         ax.scatter(xs, ys, s=120, color='blue', zorder=5)
         for u in uavs:
-            ax.text(u.pos[0], u.pos[1] + 0.08, f"U{u.id}", fontsize=8, zorder=6)
+            ax.text(u.pos[0], u.pos[1]+0.08, f"U{u.id}", fontsize=8, zorder=6)
         ax.set_title(f"Time : {step*dt:.2f}s")
         plt.pause(0.1)
 
         if all(u.reached for u in uavs):
-            print(f"All UAVs reached their goals at step {step}")
+            print(f"✅ All UAVs reached goals at step {step}")
             break
 
     plt.show()
 
-
-def main():
-    merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42)
-
-
 if __name__ == "__main__":
-    main()
+    merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42)

@@ -14,32 +14,37 @@ def euclid(a, b):
 # -------------------------------
 # Graph generation
 # -------------------------------
-def build_random_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=42):
-    """Return (G, pos) where G is a Graph with 'weight' on edges and pos is dict node->(x,y)."""
-    random.seed(seed)
-    np.random.seed(seed)
-    G = nx.Graph()
-    pos = {}
-    for i in range(n_nodes):
-        node = f"N{i}"
-        pos[node] = (random.random() * width, random.random() * height)
-        G.add_node(node)
 
-    nodes = list(pos.keys())
-    for a in nodes:
-        dists = []
-        for b in nodes:
-            if a == b:
-                continue
-            d = euclid(pos[a], pos[b])
-            dists.append((d, b))
-        dists.sort(key=lambda x: x[0])
-        for _, b in dists[:k_nearest]:
-            if not G.has_edge(a, b):
-                dist = euclid(pos[a], pos[b])
-                G.add_edge(a, b, weight=dist)
+def build_grid_graph(rows=5, cols=5):
+    G = nx.grid_2d_graph(rows, cols)  # creates a lattice grid
+    pos = {(i, j): (i, j) for i, j in G.nodes()}  # positions = coordinates
+    
+    # Convert to string node labels if you want consistency
+    mapping = {node: f"N{node[0]}_{node[1]}" for node in G.nodes()}
+    G = nx.relabel_nodes(G, mapping)
+    pos = {mapping[node]: coord for node, coord in pos.items()}
+
+    # Add weights (e.g., Euclidean distance)
+    for u, v in G.edges():
+        (x1, y1), (x2, y2) = pos[u], pos[v]
+        G[u][v]['weight'] = ((x1-x2)**2 + (y1-y2)**2)**0.5
+
     return G, pos
 
+
+#---------------------------------
+# No-fly zones application
+#---------------------------------
+
+def apply_no_fly_zones(G, nofly_nodes):
+    VERY_HIGH = 1e6
+    for node in nofly_nodes:
+        if node in G.nodes:
+            for neighbor in list(G.neighbors(node)):
+                if G.has_edge(node, neighbor):
+                    G[node][neighbor]['weight'] = VERY_HIGH
+                    G[neighbor][node]['weight'] = VERY_HIGH 
+    return G       
 
 # -------------------------------
 # UAV class
@@ -67,14 +72,16 @@ class UAV:
             self.next_node_index = 0
             return False
         self.path_nodes = path
-        try:
-            self.next_node_index = self.path_nodes.index(self.cur_node)
-        except ValueError:
-            self.next_node_index = 0
+        # if current node is not at index 0 in returned path, set index appropriately
+        # try:
+        #     self.next_node_index = self.path_nodes.index(self.cur_node)
+        # except ValueError:
+            # if cur_node not in path (rare), set to 0
+        self.next_node_index = 0
         return True
 
-    def nearest_node(self):
-        return min(self.positions.keys(), key=lambda n: euclid(self.pos, self.positions[n]))
+    # def nearest_node(self):
+    #     return min(self.positions.keys(), key=lambda n: euclid(self.pos, self.positions[n]))
 
     def next_node(self):
         if self.reached or self.next_node_index >= len(self.path_nodes) - 1:
@@ -84,11 +91,10 @@ class UAV:
     def move_step(self, dt, node_reservation):
         if self.reached:
             return
-
+        
         nxt_node = self.next_node()
         if nxt_node is None:
-            if self.cur_node == self.goal_node:
-                self.reached = True
+            self.reached = True
             return
 
         reserved = node_reservation.get(nxt_node)
@@ -97,17 +103,18 @@ class UAV:
             self.trajectory.append(tuple(self.pos))
             return
 
-        target_pos = np.array(self.positions[nxt_node])
+        # Move continuous toward next node
+        target_pos = np.array(self.positions[nxt_node], dtype=float)
         vec = target_pos - self.pos
         dist = np.linalg.norm(vec)
 
         if dist == 0:
             self.cur_node = nxt_node
             self.next_node_index += 1
-            if self.cur_node == self.goal_node:
-                self.reached = True
             self.trajectory.append(tuple(self.pos))
             self.wait_count = 0
+            if self.cur_node == self.goal_node:
+                self.reached = True
             return
 
         step = self.speed * dt
@@ -120,6 +127,7 @@ class UAV:
             if self.cur_node == self.goal_node:
                 self.reached = True
         else:
+            self.pos = self.pos.astype(float)
             self.pos += (vec / dist) * step
             self.trajectory.append(tuple(self.pos))
 

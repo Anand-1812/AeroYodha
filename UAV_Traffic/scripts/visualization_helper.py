@@ -1,8 +1,10 @@
 import matplotlib.pyplot as plt
 import networkx as nx
+import json
+import os
 
 def draw_graph_with_path(G, pos, path=None, start=None, goal=None,
-                         nofly_nodes=None, nofly_edges=None, ax=None):
+                         nofly_nodes=None, ax=None):
     """Draw graph and overlay a path (if provided)."""
     if ax is None:
         fig, ax = plt.subplots(figsize=(9,6))
@@ -26,8 +28,26 @@ def draw_graph_with_path(G, pos, path=None, start=None, goal=None,
     if start and start in pos:
         ax.scatter([pos[start][0]], [pos[start][1]], s=220, marker='*', edgecolors='k', zorder=5)
         ax.text(pos[start][0], pos[start][1]+0.12, "START", fontsize=9)
+    
     if goal and goal in pos:
         ax.scatter([pos[goal][0]], [pos[goal][1]], s=220, marker='X', edgecolors='k', zorder=5)
         ax.text(pos[goal][0], pos[goal][1]+0.12, "GOAL", fontsize=9)
 
     return ax
+
+def export_graph(G, pos, filepath="graph.json"):
+    """Export graph to JSON for frontend"""
+
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    result_dir = os.path.join(base_dir, "results")
+    os.makedirs(result_dir, exist_ok=True)
+    filepath = os.path.join(result_dir, filepath)
+
+    graph_data = {
+        "nodes": [{"id": n, "x": pos[n][0], "y": pos[n][1]} for n in G.nodes()],
+        "edges": [{"source": u, "target": v, "weight": G[u][v]['weight']} for u,v in G.edges()]
+    }
+    with open(filepath, "w") as f:
+        json.dump(graph_data, f, indent=2)
+
+    print(f"Graph exported to {filepath}")
