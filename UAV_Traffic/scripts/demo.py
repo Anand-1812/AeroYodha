@@ -1,7 +1,9 @@
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
-from simulate_uav import build_random_graph, UAV
+import json
+import os
+from simulate_uav import build_grid_graph, UAV
 from visualization_helper import draw_graph_with_path
 from path_planning import path_length
 from backend_connector import send_data_to_backend, log_state
@@ -34,7 +36,7 @@ def apply_nofly_penalties(G, nofly_nodes=None, nofly_edges=None, penalty=VERY_HI
 
 def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42):
     """Run UAV simulation with both visualization and backend/logging."""
-    G, pos = build_random_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=seed)
+    G, pos = build_grid_graph(rows=12, cols=8) 
 
     # apply no-fly penalties
     apply_nofly_penalties(G, nofly_nodes=NOFLY_NODES, nofly_edges=NOFLY_EDGES, penalty=VERY_HIGH)
@@ -71,8 +73,6 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
 
     for step in range(steps):
         ax.clear()
-
-        # Draw base graph
         draw_graph_with_path(G, pos, nofly_nodes=nofly_nodes, ax=ax)
 
         # Node reservation with priority: lower id wins
@@ -84,17 +84,11 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
         for u in uavs:
             u.move_step(dt, node_reservation)
 
-        # replanning if stuck
-        for u in uavs:
-            ax.scatter(u.pos[0], u.pos[1], color="blue", s=120, zorder=5)
-            ax.text(u.pos[0]+0.1, u.pos[1]+0.1, f"U{u.id}", fontsize=8)
-
         # Visualization per step
-        ax.clear()
-        draw_graph_with_path(G, pos, path=None, start=None, goal=None, nofly_nodes=NOFLY_NODES, nofly_edges=NOFLY_EDGES, ax=ax)
         xs = [u.pos[0] for u in uavs]
         ys = [u.pos[1] for u in uavs]
         ax.scatter(xs, ys, s=120, color='blue', zorder=5)
+        
         for u in uavs:
             ax.text(u.pos[0], u.pos[1]+0.08, f"U{u.id}", fontsize=8, zorder=6)
         ax.set_title(f"Time : {step*dt:.2f}s")
@@ -104,7 +98,27 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
             print(f"✅ All UAVs reached goals at step {step}")
             break
 
+    def save_results_json(uavs, pos, filepath="results/sim_output.json"):
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        data = {
+            "grid":{str(k): v for k, v in pos.items()},
+            "uavs":[]
+        }
+        for u in uavs:
+            data["uavs"].append({
+                "id":u.id,
+                "start":u.start_node,
+                "goal":u.goal_node,
+                "speed":u.speed,
+                "path":u.path_nodes,
+                "trajectory":[tuple(map(float,p)) for p in u.trajectory]
+            })
+        with open(filepath, "w") as f:
+            json.dump(data, f, indent=4)
+        print(f"Result saved to {filepath}")
+
     plt.show()
+    save_results_json(uavs, pos, filepath="results/sim_output.json")
 
 if __name__ == "__main__":
     merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42)
