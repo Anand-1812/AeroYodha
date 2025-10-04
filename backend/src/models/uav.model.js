@@ -19,5 +19,4 @@ const stepSchema = new Schema(
 );
 
 stepSchema.index({ createdAt: 1 }, { expireAfterSeconds: 120 });
-
 export const UAV = mongoose.model("StepSnapshot", stepSchema);
