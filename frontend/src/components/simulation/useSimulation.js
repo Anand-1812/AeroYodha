@@ -79,7 +79,6 @@ export const useSimulation = () => {
     return () => cancelAnimationFrame(rafRef.current);
   }, [running]);
 
-  // manual refresh from API (replace with real fetch later)
   const refreshData = () => {
     setUavs(mockFetchUAVs());
     setGeofences(mockFetchGeofences());
