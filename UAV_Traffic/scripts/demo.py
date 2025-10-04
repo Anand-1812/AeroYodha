@@ -73,7 +73,7 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
 
     for step in range(steps):
         ax.clear()
-        draw_graph_with_path(G, pos, nofly_nodes=nofly_nodes, ax=ax)
+        draw_graph_with_path(G, pos, nofly_nodes=NOFLY_NODES, ax=ax)
 
         # Node reservation with priority: lower id wins
         node_reservation = {}
