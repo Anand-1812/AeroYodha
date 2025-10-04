@@ -1,26 +1,58 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import {
   MapContainer,
   TileLayer,
   Popup,
   Rectangle,
-  Polyline,
 } from "react-leaflet";
 import L from "leaflet";
 import herodrone from "../../assets/hero-drone.png";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
 
+// Rectangle bounds
+const rectangle1 = [
+  [28.6188961, 77.2103825],
+  [28.6078898, 77.2267138],
+];
+
+const rectangle2 = [
+  [28.52, 77.16],
+  [28.56, 77.2],
+];
+
+// Generate random UAV position inside rectangle
 function gen_position() {
-  const minLat = 28.4,
-    maxLat = 28.88;
-  const minLng = 76.84,
-    maxLng = 77.35;
+  const [lat1, lng1] = rectangle1[0];
+  const [lat2, lng2] = rectangle1[1];
+
+  const minLat = Math.min(lat1, lat2),
+    maxLat = Math.max(lat1, lat2);
+  const minLng = Math.min(lng1, lng2),
+    maxLng = Math.max(lng1, lng2);
+
   return {
     lat: parseFloat((Math.random() * (maxLat - minLat) + minLat).toFixed(6)),
     lng: parseFloat((Math.random() * (maxLng - minLng) + minLng).toFixed(6)),
   };
 }
 
+// Haversine distance (m)
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// UAV Icon
 const uavIcon = new L.Icon({
   iconUrl: herodrone,
   iconSize: [40, 40],
@@ -28,95 +60,74 @@ const uavIcon = new L.Icon({
   popupAnchor: [0, -40],
 });
 
-export default function basic_map() {
-  const rectangle1 = [
-    [28.6, 77.19],
-    [28.64, 77.23],
-  ];
-  const rectangle2 = [
-    [28.52, 77.16],
-    [28.56, 77.2],
-  ];
-  const redOptions = { color: "red" };
+// UAV Component
+class UAV extends React.Component {
+  state = {
+    latlng: gen_position(),
+    duration: 3000,
+  };
 
-  class SampleComp extends Component {
-    state = {
-      latlng: gen_position(),
-      trajectory: [],
-    };
-
-    componentDidMount() {
-      this.interval = setInterval(() => {
-        const newPos = gen_position();
-        this.setState((prev) => ({
-          latlng: newPos,
-          trajectory: [...prev.trajectory, newPos].slice(-10), // keep last 10
-        }));
-      }, 3000);
-    }
-
-    componentWillUnmount() {
-      clearInterval(this.interval);
-    }
-
-    render() {
-      const { latlng, trajectory } = this.state;
-
-      return (
-        <>
-          {/* UAV marker */}
-          <ReactLeafletDriftMarker
-            position={latlng}
-            duration={3000}
-            icon={uavIcon}
-          >
-            <Popup>UAV Live Position</Popup>
-          </ReactLeafletDriftMarker>
-
-          {/* UAV trajectory with faster fading effect */}
-          {trajectory.length > 1 &&
-            trajectory.map((pos, i) => {
-              if (i === 0) return null; // skip first point
-              const opacity = Math.pow((i + 1) / trajectory.length, 3); // faster fade
-              return (
-                <Polyline
-                  key={i}
-                  positions={[
-                    [trajectory[i - 1].lat, trajectory[i - 1].lng],
-                    [pos.lat, pos.lng],
-                  ]}
-                  pathOptions={{
-                    color: "blue",
-                    opacity: opacity, // fade effect
-                  }}
-                />
-              );
-            })}
-        </>
-      );
-    }
+  componentDidMount() {
+    this.moveUAV();
   }
 
+  componentWillUnmount() {
+    clearTimeout(this.timer);
+  }
+
+  moveUAV = () => {
+    const newPos = gen_position();
+    const { latlng } = this.state;
+
+    const dist = getDistance(latlng.lat, latlng.lng, newPos.lat, newPos.lng);
+
+    const speedKmh = this.props.speedKmh || 60;
+    const speedMs = (speedKmh * 1000) / 3600;
+
+    const duration = (dist / speedMs) * 1000;
+
+    this.setState({ latlng: newPos, duration });
+    this.timer = setTimeout(this.moveUAV, duration);
+  };
+
+  render() {
+    const { latlng, duration } = this.state;
+    const { id, speedKmh } = this.props;
+
+    return (
+      <ReactLeafletDriftMarker position={latlng} duration={duration} icon={uavIcon}>
+        <Popup>{`UAV ${id} - Speed: ${speedKmh} km/h`}</Popup>
+      </ReactLeafletDriftMarker>
+    );
+  }
+}
+
+// Main Map Component
+export default function BasicMap() {
+  const [activeUavs] = useState([2, 3]); // default 2 UAVs
+  const rectangleOptions = { color: "black" };
+
   return (
-    <div className="d-flex" style={{ height: "100vh", width: "100%" }}>
+    <div style={{ height: "100vh", width: "100%" }}>
       <MapContainer
-        className="mapcontainer"
-        center={[28.6139, 77.209]}
-        zoom={10}
+        center={[28.6133825, 77.21849369]}
+        zoom={16}
         style={{ height: "100%", width: "100%" }}
         zoomControl={false}
-        scrollWheelZoom={false}
-        doubleClickZoom={false}
-        touchZoom={false}
-        dragging={false}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
-        <SampleComp />
-        <Rectangle bounds={rectangle1} pathOptions={redOptions} />
-        <Rectangle bounds={rectangle2} pathOptions={redOptions} />
+
+        {/* Render UAVs */}
+        {activeUavs.map((id) => (
+          <UAV key={id} id={id} speedKmh={60} />
+        ))}
+
+        {/* Geofences */}
+        <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
+        <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
       </MapContainer>
     </div>
   );
