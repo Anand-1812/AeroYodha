@@ -1,7 +1,7 @@
 import requests
 import json
 
-def send_data_to_backend(uavs, step, url="http://localhost:3000/api/v1/uavs/"):
+def send_data_to_backend(uavs, step, url="http://localhost:8000/api/v1/uavs/"):
     """
     Send a step snapshot of UAVs to the backend.
     Matches the MongoDB UAV snapshot schema.
