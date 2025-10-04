@@ -39,7 +39,7 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
     G, pos = build_grid_graph(rows=12, cols=8) 
 
     # apply no-fly penalties
-    apply_nofly_penalties(G, nofly_nodes=NOFLY_NODES, nofly_edges=NOFLY_EDGES, penalty=VERY_HIGH)
+    apply_nofly_penalties(G, nofly_nodes=NOFLY_NODES, penalty=VERY_HIGH)
 
     # candidate nodes exclude isolated or no-fly
     candidate_nodes = [n for n in G.nodes() if G.degree[n] > 0 and n not in NOFLY_NODES]
@@ -73,7 +73,7 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
 
     for step in range(steps):
         ax.clear()
-        draw_graph_with_path(G, pos, nofly_nodes=nofly_nodes, ax=ax)
+        draw_graph_with_path(G, pos,path=None, start=None, goal=None ,nofly_nodes=NOFLY_NODES, ax=ax)
 
         # Node reservation with priority: lower id wins
         node_reservation = {}
@@ -85,12 +85,27 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
             u.move_step(dt, node_reservation)
 
         # Visualization per step
+        # xs = [u.pos[0] for u in uavs]
+        # ys = [u.pos[1] for u in uavs]
+        # ax.scatter(xs, ys, s=120, color='blue', zorder=5)
+        
+        for u in uavs:
+            ax.scatter(u.pos[0], u.pos[1], color="blue", s=120, zorder=5)
+            ax.text(u.pos[0]+0.1, u.pos[1]+0.1, f"U{u.id}", fontsize=8)
+            # ax.set_title(f"Time : {step*dt:.2f}s")
+            ax.clear()
+        
+        # plt.pause(0.1)
+
+        draw_graph_with_path(G, pos, path=None, start=None, goal=None, nofly_nodes=NOFLY_NODES, ax=ax)
+
         xs = [u.pos[0] for u in uavs]
         ys = [u.pos[1] for u in uavs]
         ax.scatter(xs, ys, s=120, color='blue', zorder=5)
-        
+
         for u in uavs:
             ax.text(u.pos[0], u.pos[1]+0.08, f"U{u.id}", fontsize=8, zorder=6)
+
         ax.set_title(f"Time : {step*dt:.2f}s")
         plt.pause(0.1)
 

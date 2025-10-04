@@ -158,7 +158,7 @@ class UAV:
 # Simulation helper for backend
 # -------------------------------
 def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42):
-    G, pos = build_random_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=seed)
+    G, pos = build_grid_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=seed)
 
     candidate_nodes = list(G.nodes())
     starts = random.sample(candidate_nodes, num_uavs)
