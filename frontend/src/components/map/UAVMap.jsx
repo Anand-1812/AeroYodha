@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -7,13 +7,13 @@ import {
   CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
-import herodrone from "../../assets/hero-drone.png";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
+import herodrone from "../../assets/hero-drone.png";
 
-// Rectangle bounds
+// === Rectangle bounds ===
 const rectangle1 = [
-  [28.6188961, 77.2103825], // top-left
-  [28.6078898, 77.2267138], // bottom-right
+  [28.6188961, 77.2103825],
+  [28.6078898, 77.2267138],
 ];
 
 const rectangle2 = [
@@ -21,91 +21,7 @@ const rectangle2 = [
   [28.56, 77.2],
 ];
 
-// Generate random UAV position inside rectangle
-function gen_position() {
-  const [lat1, lng1] = rectangle1[0];
-  const [lat2, lng2] = rectangle1[1];
-
-  const minLat = Math.min(lat1, lat2),
-    maxLat = Math.max(lat1, lat2);
-  const minLng = Math.min(lng1, lng2),
-    maxLng = Math.max(lng1, lng2);
-
-  return {
-    lat: parseFloat((Math.random() * (maxLat - minLat) + minLat).toFixed(6)),
-    lng: parseFloat((Math.random() * (maxLng - minLng) + minLng).toFixed(6)),
-  };
-}
-
-// Haversine distance (m)
-function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371e3;
-  const φ1 = (lat1 * Math.PI) / 180;
-  const φ2 = (lat2 * Math.PI) / 180;
-  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(Δφ / 2) ** 2 +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-// UAV Icon
-const uavIcon = new L.Icon({
-  iconUrl: herodrone,
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
-});
-
-// UAV Component
-class UAV extends React.Component {
-  state = {
-    latlng: gen_position(),
-    duration: 3000,
-  };
-
-  componentDidMount() {
-    this.moveUAV();
-  }
-
-  componentWillUnmount() {
-    clearTimeout(this.timer);
-  }
-
-  moveUAV = () => {
-    const newPos = gen_position();
-    const { latlng } = this.state;
-
-    const dist = getDistance(latlng.lat, latlng.lng, newPos.lat, newPos.lng);
-    const speedKmh = this.props.speedKmh || 120;
-    const speedMs = (speedKmh * 1000) / 2500;
-    const duration = (dist / speedMs) * 1000;
-
-    this.setState({ latlng: newPos, duration });
-    this.timer = setTimeout(this.moveUAV, duration);
-  };
-
-  render() {
-    const { latlng, duration } = this.state;
-    const { id, speedKmh } = this.props;
-
-    return (
-      <ReactLeafletDriftMarker
-        position={latlng}
-        duration={duration}
-        icon={uavIcon}
-      >
-        <Popup>{`UAV ${id} - Speed: ${speedKmh} km/h`}</Popup>
-      </ReactLeafletDriftMarker>
-    );
-  }
-}
-
-// Convert matrix coordinate to Delhi coordinates within rectangle1
+// === Utility: Convert N{row}_{col} → [lat, lon] ===
 function matrixToDelhiCoords(row, col, matrixSize = 30) {
   const [lat1, lon1] = rectangle1[0];
   const [lat2, lon2] = rectangle1[1];
@@ -119,11 +35,120 @@ function matrixToDelhiCoords(row, col, matrixSize = 30) {
   return [lat, lon];
 }
 
-// Main Map Component
+// === Utility: Haversine distance in meters ===
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371e3;
+  const φ1 = (lat1 * Math.PI) / 180;
+  const φ2 = (lat2 * Math.PI) / 180;
+  const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+  const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// === UAV icon ===
+const uavIcon = new L.Icon({
+  iconUrl: herodrone,
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
+});
+
+// === UAV COMPONENT (follows predefined path) ===
+function UAV({ id, path, speed }) {
+  const [index, setIndex] = useState(0);
+  const [latlng, setLatlng] = useState(() => {
+    const [r, c] = path[0].match(/\d+/g).map(Number);
+    return matrixToDelhiCoords(r, c);
+  });
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    if (index >= path.length - 1) return; // reached destination
+
+    const [r1, c1] = path[index].match(/\d+/g).map(Number);
+    const [r2, c2] = path[index + 1].match(/\d+/g).map(Number);
+    const [lat1, lon1] = matrixToDelhiCoords(r1, c1);
+    const [lat2, lon2] = matrixToDelhiCoords(r2, c2);
+
+    const dist = getDistance(lat1, lon1, lat2, lon2);
+    const speedMs = speed; // already in m/s
+    const time = (dist / speedMs) * 1000; // ms
+
+    setLatlng([lat2, lon2]);
+    setDuration(time);
+
+    const timer = setTimeout(() => setIndex((prev) => prev + 1), time);
+    return () => clearTimeout(timer);
+  }, [index, path, speed]);
+
+  return (
+    <ReactLeafletDriftMarker position={latlng} duration={duration} icon={uavIcon}>
+      <Popup>
+        UAV {id}
+        <br />
+        Speed: {speed.toFixed(2)} m/s
+        <br />
+        Waypoint {index + 1}/{path.length}
+      </Popup>
+    </ReactLeafletDriftMarker>
+  );
+}
+
+// === MOCK DATA ===
+const mockData = {
+  uavs: [
+    {
+      id: 0,
+      start: "N2_26",
+      goal: "N17_10",
+      speed: 100,
+      path: [
+        "N2_26",
+        "N2_25",
+        "N2_24",
+        "N3_24",
+        "N3_23",
+        "N4_23",
+        "N4_22",
+        "N5_22",
+        "N5_21",
+        "N6_21",
+        "N6_20",
+        "N7_20",
+        "N7_19",
+        "N8_19",
+        "N8_18",
+        "N9_18",
+        "N9_17",
+        "N10_17",
+        "N10_16",
+        "N11_16",
+        "N11_15",
+        "N12_15",
+        "N12_14",
+        "N13_14",
+        "N13_13",
+        "N14_13",
+        "N14_12",
+        "N15_12",
+        "N15_11",
+        "N16_11",
+        "N16_10",
+        "N17_10",
+        "N30_20",
+      ],
+    },
+  ],
+};
+
+// === MAIN MAP ===
 export default function BasicMap() {
-  const [activeUavs] = useState([2, 3]); // default 2 UAVs
-  const rectangleOptions = { color: "black" };
   const matrixSize = 30;
+  const rectangleOptions = { color: "black" };
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
@@ -138,16 +163,16 @@ export default function BasicMap() {
           attribution="&copy; OpenStreetMap contributors"
         />
 
-        {/* Render UAVs */}
-        {activeUavs.map((id) => (
-          <UAV key={id} id={id} speedKmh={60} />
+        {/* UAVs following their path */}
+        {mockData.uavs.map((uav) => (
+          <UAV key={uav.id} {...uav} />
         ))}
 
         {/* Geofences */}
         <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
         <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
 
-        {/* Render 30x30 matrix points inside rectangle1 */}
+        {/* Render matrix points (optional visual grid) */}
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
             const [lat, lon] = matrixToDelhiCoords(r, c, matrixSize);
@@ -155,9 +180,9 @@ export default function BasicMap() {
               <CircleMarker
                 key={`${r}-${c}`}
                 center={[lat, lon]}
-                radius={1}
+                radius={0.1}
                 color="red"
-                fillOpacity={0.1}
+                fillOpacity={0.0}
               />
             );
           })
