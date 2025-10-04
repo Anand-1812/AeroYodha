@@ -18,7 +18,7 @@ results/dataset_flat_test.csv
 results/dataset_flat_train.csv
 results/dataset_flat.csv
 results/dataset.jsonl
-results/grid_graph.json
+results/graph.json
 results/sim_output.json
 trajectories.csv
 
