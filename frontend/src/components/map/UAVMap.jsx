@@ -4,6 +4,7 @@ import {
   TileLayer,
   Popup,
   Rectangle,
+  CircleMarker,
 } from "react-leaflet";
 import L from "leaflet";
 import herodrone from "../../assets/hero-drone.png";
@@ -11,8 +12,8 @@ import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
 
 // Rectangle bounds
 const rectangle1 = [
-  [28.6188961, 77.2103825],
-  [28.6078898, 77.2267138],
+  [28.6188961, 77.2103825], // top-left
+  [28.6078898, 77.2267138], // bottom-right
 ];
 
 const rectangle2 = [
@@ -80,10 +81,8 @@ class UAV extends React.Component {
     const { latlng } = this.state;
 
     const dist = getDistance(latlng.lat, latlng.lng, newPos.lat, newPos.lng);
-
-    const speedKmh = this.props.speedKmh || 60;
-    const speedMs = (speedKmh * 1000) / 3600;
-
+    const speedKmh = this.props.speedKmh || 120;
+    const speedMs = (speedKmh * 1000) / 2500;
     const duration = (dist / speedMs) * 1000;
 
     this.setState({ latlng: newPos, duration });
@@ -95,17 +94,36 @@ class UAV extends React.Component {
     const { id, speedKmh } = this.props;
 
     return (
-      <ReactLeafletDriftMarker position={latlng} duration={duration} icon={uavIcon}>
+      <ReactLeafletDriftMarker
+        position={latlng}
+        duration={duration}
+        icon={uavIcon}
+      >
         <Popup>{`UAV ${id} - Speed: ${speedKmh} km/h`}</Popup>
       </ReactLeafletDriftMarker>
     );
   }
 }
 
+// Convert matrix coordinate to Delhi coordinates within rectangle1
+function matrixToDelhiCoords(row, col, matrixSize = 30) {
+  const [lat1, lon1] = rectangle1[0];
+  const [lat2, lon2] = rectangle1[1];
+
+  row = Math.max(0, Math.min(matrixSize - 1, row));
+  col = Math.max(0, Math.min(matrixSize - 1, col));
+
+  const lat = lat1 + (row / (matrixSize - 1)) * (lat2 - lat1);
+  const lon = lon1 + (col / (matrixSize - 1)) * (lon2 - lon1);
+
+  return [lat, lon];
+}
+
 // Main Map Component
 export default function BasicMap() {
   const [activeUavs] = useState([2, 3]); // default 2 UAVs
   const rectangleOptions = { color: "black" };
+  const matrixSize = 30;
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
@@ -128,6 +146,22 @@ export default function BasicMap() {
         {/* Geofences */}
         <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
         <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
+
+        {/* Render 30x30 matrix points inside rectangle1 */}
+        {Array.from({ length: matrixSize }).map((_, r) =>
+          Array.from({ length: matrixSize }).map((_, c) => {
+            const [lat, lon] = matrixToDelhiCoords(r, c, matrixSize);
+            return (
+              <CircleMarker
+                key={`${r}-${c}`}
+                center={[lat, lon]}
+                radius={1}
+                color="red"
+                fillOpacity={0.1}
+              />
+            );
+          })
+        )}
       </MapContainer>
     </div>
   );

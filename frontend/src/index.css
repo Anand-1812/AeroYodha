@@ -100,3 +100,7 @@ button:focus-visible {
 .display{
   display: flex;
 }
+
+.leaflet-marker-icon.no-scale {
+  transform-origin: center center !important;
+}
