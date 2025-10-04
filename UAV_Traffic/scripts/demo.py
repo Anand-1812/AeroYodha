@@ -4,7 +4,7 @@ import networkx as nx
 import json
 import os
 from simulate_uav import build_grid_graph, UAV
-from visualization_helper import draw_graph_with_path
+from visualization_helper import draw_graph_with_path, export_graph
 from path_planning import path_length
 from backend_connector import send_data_to_backend, log_state
 
@@ -134,6 +134,7 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
 
     plt.show()
     save_results_json(uavs, pos, filepath="results/sim_output.json")
+    export_graph(G, pos, filepath="graph.json")
 
 if __name__ == "__main__":
     merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42)
