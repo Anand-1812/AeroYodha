@@ -3,6 +3,7 @@
 # -------------------------------
 
 UAV_Traffic/scripts/__pycache__/
+UAV_Traffic/results
 
 # -------------------------------
 # Backend (Python / FastAPI)
