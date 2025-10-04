@@ -17,7 +17,6 @@ VERY_HIGH = 10**6
 def apply_nofly_penalties(G, nofly_nodes=None, nofly_edges=None, penalty=VERY_HIGH):
     """Apply very high weights to no-fly nodes/edges instead of removing them."""
     nofly_nodes = nofly_nodes or []
-    nofly_edges = nofly_edges or []
 
     # penalize edges adjacent to no-fly nodes
     for node in nofly_nodes:
