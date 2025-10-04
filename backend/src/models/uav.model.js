@@ -18,4 +18,4 @@ const stepSchema = new Schema(
   { timestamps: true } // adds createdAt & updatedAt
 );
 
-export const StepSnapshot = mongoose.model("StepSnapshot", stepSchema);
+export const UAV = mongoose.model("StepSnapshot", stepSchema);
