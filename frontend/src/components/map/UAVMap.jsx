@@ -99,8 +99,8 @@ function generateRandomGeofences(matrixSize, count = 3) {
   for (let i = 0; i < count; i++) {
     const r1 = Math.floor(Math.random() * matrixSize);
     const c1 = Math.floor(Math.random() * matrixSize);
-    const r2 = r1 + Math.floor(Math.random() * 5) + 1; // random rectangle size
-    const c2 = c1 + Math.floor(Math.random() * 5) + 1;
+    const r2 = r1 + Math.floor(Math.random() * 10) + 1; // random rectangle size
+    const c2 = c1 + Math.floor(Math.random() * 10) + 1;
 
     const [lat1, lon1] = matrixToDelhiCoords(r1, c1, matrixSize);
     const [lat2, lon2] = matrixToDelhiCoords(
