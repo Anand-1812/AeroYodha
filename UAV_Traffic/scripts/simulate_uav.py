@@ -6,36 +6,54 @@ import networkx as nx
 from path_planning import compute_path  # path planning algorithms
 
 # -------------------------------
-# Utility
+# Approximate meters-to-degrees conversion
 # -------------------------------
-def euclid(a, b):
-    return math.hypot(a[0] - b[0], a[1] - b[1])
+def meters_to_deg(lat, dx, dy):
+    """
+    Convert meters offset (dx, dy) to lat/lon degrees.
+    dx -> east, dy -> north
+    """
+    dlat = dy / 111000  # 1 deg latitude ~ 111 km
+    dlon = dx / (111000 * math.cos(math.radians(lat)))  # 1 deg longitude ~ cos(lat)*111 km
+    return dlat, dlon
 
 # -------------------------------
-# Graph generation
+# Build geospatial grid around a real lat/lon
 # -------------------------------
-
-def build_grid_graph(rows=5, cols=5):
-    G = nx.grid_2d_graph(rows, cols)  # creates a lattice grid
-    pos = {(i, j): (i, j) for i, j in G.nodes()}  # positions = coordinates
+def build_real_grid(center_lat, center_lon, rows=12, cols=12, spacing_m=50):
+    """
+    center_lat, center_lon: center coordinates
+    rows, cols: grid size
+    spacing_m: distance between nodes in meters
+    """
+    G = nx.grid_2d_graph(rows, cols)
+    pos = {}
+    mapping = {}
     
-    # Convert to string node labels if you want consistency
-    mapping = {node: f"N{node[0]}_{node[1]}" for node in G.nodes()}
+    for i in range(rows):
+        for j in range(cols):
+            node_id = f"N{i}_{j}"
+            mapping[(i, j)] = node_id
+            dx = j * spacing_m - (cols // 2) * spacing_m
+            dy = i * spacing_m - (rows // 2) * spacing_m
+            dlat, dlon = meters_to_deg(center_lat, dx, dy)
+            pos[node_id] = (center_lat + dlat, center_lon + dlon)
+    
     G = nx.relabel_nodes(G, mapping)
-    pos = {mapping[node]: coord for node, coord in pos.items()}
 
-    # Add weights (e.g., Euclidean distance)
+    # Add approximate edge weights in meters
     for u, v in G.edges():
-        (x1, y1), (x2, y2) = pos[u], pos[v]
-        G[u][v]['weight'] = ((x1-x2)**2 + (y1-y2)**2)**0.5
+        lat1, lon1 = pos[u]
+        lat2, lon2 = pos[v]
+        dx = (lon2 - lon1) * 111000 * math.cos(math.radians(center_lat))
+        dy = (lat2 - lat1) * 111000
+        G[u][v]['weight'] = math.hypot(dx, dy)
 
     return G, pos
 
-
-#---------------------------------
-# No-fly zones application
-#---------------------------------
-
+# -------------------------------
+# Apply no-fly zones
+# -------------------------------
 def apply_no_fly_zones(G, nofly_nodes):
     VERY_HIGH = 1e6
     for node in nofly_nodes:
@@ -72,16 +90,8 @@ class UAV:
             self.next_node_index = 0
             return False
         self.path_nodes = path
-        # if current node is not at index 0 in returned path, set index appropriately
-        # try:
-        #     self.next_node_index = self.path_nodes.index(self.cur_node)
-        # except ValueError:
-            # if cur_node not in path (rare), set to 0
         self.next_node_index = 0
         return True
-
-    # def nearest_node(self):
-    #     return min(self.positions.keys(), key=lambda n: euclid(self.pos, self.positions[n]))
 
     def next_node(self):
         if self.reached or self.next_node_index >= len(self.path_nodes) - 1:
@@ -127,7 +137,6 @@ class UAV:
             if self.cur_node == self.goal_node:
                 self.reached = True
         else:
-            self.pos = self.pos.astype(float)
             self.pos += (vec / dist) * step
             self.trajectory.append(tuple(self.pos))
 
@@ -154,25 +163,15 @@ class UAV:
                 self.wait_count = 0
                 return
 
-# return snapshots for backend model, and integrate no fly zones
-def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42, rows=12, cols=8, nofly_ratio=0.08):
+# -------------------------------
+# Simulation helper
+# -------------------------------
+def run_simulation(center_lat=28.7041, center_lon=77.1025,
+                   num_uavs=5, dt=0.25, sim_time=60, seed=42):
     random.seed(seed)
-    G, pos = build_grid_graph(rows=rows, cols=cols)
+    G, pos = build_real_grid(center_lat, center_lon, rows=12, cols=12, spacing_m=50)
 
-    # optionally generate random no-fly nodes (list of node ids)
-    all_nodes = [n for n in G.nodes()]
-    num_nofly = max(0, int(len(all_nodes) * nofly_ratio))
-    nofly_nodes = random.sample(all_nodes, num_nofly) if num_nofly > 0 else []
-
-    # apply no-fly by inflating edge weights
-    G = apply_no_fly_zones(G, nofly_nodes)
-
-    # pick candidate nodes excluding no-fly (and isolated nodes)
-    candidate_nodes = [n for n in G.nodes() if G.degree[n] > 0 and n not in nofly_nodes]
-    if len(candidate_nodes) < num_uavs:
-        raise ValueError("Not enough candidate nodes for requested UAV count.")
-
-    # starts & goals
+    candidate_nodes = list(G.nodes())
     starts = random.sample(candidate_nodes, num_uavs)
     goals = []
     for s in starts:
@@ -181,40 +180,31 @@ def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42, rows=12, cols=8, n
             g = random.choice(candidate_nodes)
         goals.append(g)
 
-    uavs = [UAV(i, starts[i], goals[i], pos, G, speed=1.2 + 0.3 * random.random()) for i in range(num_uavs)]
+    uavs = [UAV(i, starts[i], goals[i], pos, G, speed=1.2) for i in range(num_uavs)]
 
     steps = int(sim_time / dt)
     snapshots = []
 
     for step in range(steps):
-        # compute node reservations BEFORE movement (who stands where)
         node_reservation = {u.cur_node: u.id for u in uavs if not u.reached}
-
-        # move
         for u in uavs:
             u.move_step(dt, node_reservation)
-
-        # replan if someone is stuck
         for u in uavs:
             u.replan_if_stuck(node_reservation)
 
-        # Build snapshot that conforms to Mongoose schema:
-        snapshot = {
-            "step": step,
-            "uavs": [
-                {
-                    "id": int(u.id),
-                    "x": float(u.pos[0]),
-                    "y": float(u.pos[1]),
-                    "start": u.start_node,
-                    "goal": u.goal_node,
-                    "reached": bool(u.reached),
-                    "path": list(u.path_nodes)
-                }
-                for u in uavs
-            ],
-            "noFlyZones": list(nofly_nodes)
-        }
+        # Save backend snapshot
+        snapshot = [
+            {
+                "_id": f"UAV{u.id}",
+                "type": "commercial",
+                "status": "flying" if not u.reached else "idle",
+                "latitude": float(u.pos[0]),
+                "longitude": float(u.pos[1]),
+                "altitude": 100.0,
+                "batteryLevel": round(random.uniform(50, 100), 2)
+            }
+            for u in uavs
+        ]
         snapshots.append(snapshot)
 
         if all(u.reached for u in uavs):
@@ -222,6 +212,9 @@ def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42, rows=12, cols=8, n
 
     return snapshots
 
+# -------------------------------
+# Entry Point for testing
+# -------------------------------
 if __name__ == "__main__":
     snaps = run_simulation()
     for s in snaps:
