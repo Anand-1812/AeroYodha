@@ -68,7 +68,7 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
     random.seed(seed)
 
     # Build grid graph
-    G, pos = build_real_grid(rows=12, cols=8)
+    G, pos = build_real_grid(center_lat=28.7041, center_lon=77.1025, rows=12, cols=8)
 
     # Dynamically generate no-fly zones
     all_nodes = list(G.nodes())
