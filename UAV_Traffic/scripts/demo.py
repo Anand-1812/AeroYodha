@@ -3,7 +3,7 @@ import networkx as nx
 import json
 import os
 import matplotlib.pyplot as plt
-from simulate_uav import build_grid_graph, UAV
+from simulate_uav import build_real_grid, UAV
 from visualization_helper import draw_graph_with_path, export_graph
 from path_planning import path_length
 import requests
@@ -68,7 +68,7 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
     random.seed(seed)
 
     # Build grid graph
-    G, pos = build_grid_graph(rows=12, cols=8)
+    G, pos = build_real_grid(rows=12, cols=8)
 
     # Dynamically generate no-fly zones
     all_nodes = list(G.nodes())
