@@ -154,13 +154,25 @@ class UAV:
                 self.wait_count = 0
                 return
 
-# -------------------------------
-# Simulation helper for backend
-# -------------------------------
-def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42):
-    G, pos = build_grid_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=seed)
+# return snapshots for backend model, and integrate no fly zones
+def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42, rows=12, cols=8, nofly_ratio=0.08):
+    random.seed(seed)
+    G, pos = build_grid_graph(rows=rows, cols=cols)
 
-    candidate_nodes = list(G.nodes())
+    # optionally generate random no-fly nodes (list of node ids)
+    all_nodes = [n for n in G.nodes()]
+    num_nofly = max(0, int(len(all_nodes) * nofly_ratio))
+    nofly_nodes = random.sample(all_nodes, num_nofly) if num_nofly > 0 else []
+
+    # apply no-fly by inflating edge weights
+    G = apply_no_fly_zones(G, nofly_nodes)
+
+    # pick candidate nodes excluding no-fly (and isolated nodes)
+    candidate_nodes = [n for n in G.nodes() if G.degree[n] > 0 and n not in nofly_nodes]
+    if len(candidate_nodes) < num_uavs:
+        raise ValueError("Not enough candidate nodes for requested UAV count.")
+
+    # starts & goals
     starts = random.sample(candidate_nodes, num_uavs)
     goals = []
     for s in starts:
@@ -169,31 +181,40 @@ def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42):
             g = random.choice(candidate_nodes)
         goals.append(g)
 
-    uavs = [UAV(i, starts[i], goals[i], pos, G, speed=1.2) for i in range(num_uavs)]
+    uavs = [UAV(i, starts[i], goals[i], pos, G, speed=1.2 + 0.3 * random.random()) for i in range(num_uavs)]
 
     steps = int(sim_time / dt)
     snapshots = []
 
     for step in range(steps):
+        # compute node reservations BEFORE movement (who stands where)
         node_reservation = {u.cur_node: u.id for u in uavs if not u.reached}
+
+        # move
         for u in uavs:
             u.move_step(dt, node_reservation)
+
+        # replan if someone is stuck
         for u in uavs:
             u.replan_if_stuck(node_reservation)
 
-        # Save backend snapshot
-        snapshot = [
-            {
-                "_id": f"UAV{u.id}",
-                "type": "commercial",
-                "status": "flying" if not u.reached else "idle",
-                "latitude": float(u.pos[0]),
-                "longitude": float(u.pos[1]),
-                "altitude": 100.0,
-                "batteryLevel": round(random.uniform(50, 100), 2)
-            }
-            for u in uavs
-        ]
+        # Build snapshot that conforms to Mongoose schema:
+        snapshot = {
+            "step": step,
+            "uavs": [
+                {
+                    "id": int(u.id),
+                    "x": float(u.pos[0]),
+                    "y": float(u.pos[1]),
+                    "start": u.start_node,
+                    "goal": u.goal_node,
+                    "reached": bool(u.reached),
+                    "path": list(u.path_nodes)
+                }
+                for u in uavs
+            ],
+            "noFlyZones": list(nofly_nodes)
+        }
         snapshots.append(snapshot)
 
         if all(u.reached for u in uavs):
