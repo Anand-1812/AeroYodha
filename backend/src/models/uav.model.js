@@ -1,26 +1,22 @@
 import mongoose, { Schema } from "mongoose";
 
-// UAV Schema
-const uavSchema = new Schema(
+const uavSchema = new Schema({
+  id: { type: Number, required: true },       // UAV id from sim
+  x: { type: Number, required: true },
+  y: { type: Number, required: true },
+  start: { type: String, required: true },
+  goal: { type: String, required: true },
+  reached: { type: Boolean, default: false },
+  path: [{ type: String }]                    // array of node ids
+});
+
+const stepSchema = new Schema(
   {
-    _id: { type: String, required: true }, // UAV ID
-    type: {
-      type: String,
-      enum: ["commercial", "emergency", "recreational"],
-      required: true
-    },
-    status: {
-      type: String,
-      enum: ["idle", "flying", "emergency", "maintenance"],
-      default: "idle"
-    },
-    latitude: { type: Number, default: null },
-    longitude: { type: Number, default: null },
-    altitude: { type: Number, default: null },
-    batteryLevel: { type: Number, default: 100 },
+    step: { type: Number, required: true },   // simulation timestep
+    uavs: [uavSchema]                         // array of UAV states
   },
-  { timestamps: true } // adds createdAt and updatedAt automatically
+  { timestamps: true } // adds createdAt & updatedAt
 );
 
-export const UAV = mongoose.model("UAV", uavSchema);
-
+stepSchema.index({ createdAt: 1 }, { expireAfterSeconds: 120 });
+export const UAV = mongoose.model("StepSnapshot", stepSchema);
