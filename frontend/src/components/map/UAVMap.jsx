@@ -136,7 +136,7 @@ export default function BasicMap({ running, uavs }) {
         center={[28.6133825, 77.21849369]}
         zoom={16}
         style={{ height: "100%", width: "100%" }}
-        zoomControl={false}
+        zoomControl={true}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

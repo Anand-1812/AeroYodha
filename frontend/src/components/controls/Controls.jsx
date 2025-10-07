@@ -1,14 +1,15 @@
 import React from "react";
+import logo from "../../assets/Logo.png"
 
-const Controls = ({ 
-  running, 
-  setRunning, 
-  stop, 
-  refreshData, 
-  uavs, 
-  uavCount, 
-  setUavCount, 
-  handleAddUavs 
+const Controls = ({
+  running,
+  setRunning,
+  stop,
+  refreshData,
+  uavs,
+  uavCount,
+  setUavCount,
+  handleAddUavs,
 }) => {
   return (
     <div
@@ -24,7 +25,8 @@ const Controls = ({
       {/* Title */}
       <div className="row">
         <div className="col d-flex justify-content-center">
-          <h2>AeroYodha</h2>
+          {/* <h2>AeroYodha</h2> */}
+          <img src={logo} alt="Logo" style={{height:100 , width:300}}></img>
         </div>
 
         {/* Start / Stop buttons */}
@@ -48,14 +50,21 @@ const Controls = ({
 
       {/* UAV Count Control */}
       <div style={{ marginTop: "10px" }}>
-        <label style={{ marginRight: "10px" }}>Number of UAVs:</label>
-        <input
-          type="number"
-          value={uavCount}
-          onChange={(e) => setUavCount(e.target.value)}
-          min="1"
-          style={{ width: "60px", marginRight: "10px" }}
-        />
+        <div className="input-group mb-3" style={{ width: "120px" }}>
+          <span className="input-group-text bg-dark text-white border-dark" id="uav-count-addon">
+            UAVs:
+          </span>
+          <input
+            type="number"
+            className="form-control bg-dark text-white border-dark"
+            value={uavCount}
+            onChange={(e) => setUavCount(e.target.value)}
+            min="1"
+            max="8"
+            aria-label="Number of UAVs"
+            aria-describedby="uav-count-addon"
+          />
+        </div>
         <button onClick={handleAddUavs} className="btn-generic rounded-pill">
           Generate UAVs
         </button>
