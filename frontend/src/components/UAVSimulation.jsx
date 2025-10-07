@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Controls from "./controls/Controls";
 import BasicMap from "./map/UAVMap";
 
@@ -28,14 +28,21 @@ export default function UAVSimulation() {
 
   return (
     <div className="container-fluid p-0" style={{ height: "100vh" }}>
-      <div className="row g-0 h-100">
+      <div className="row g-0" style={{ height: "100%" }}>
         {/* Map Section */}
-        <div className="col-12 col-lg-9" style={{ height: "50vh", minHeight: "300px" }}>
+        <div className="col-12 col-lg-9" style={{ height: "100%" }}>
           <BasicMap running={running} uavs={uavs} />
         </div>
 
-        {/* Controls Section */}
-        <div className="col-12 col-lg-3" style={{ height: "50vh", overflowY: "auto" }}>
+        {/* Controls Section (static, full height) */}
+        <div
+          className="col-12 col-lg-3"
+          style={{
+            height: "100vh",
+            overflowY: "auto",
+            padding: "12px",
+          }}
+        >
           <Controls
             running={running}
             setRunning={setRunning}
