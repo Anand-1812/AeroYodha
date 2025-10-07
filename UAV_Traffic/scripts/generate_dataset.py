@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Generates synthetic dataset for UAV next-move supervision.
 Writes:
@@ -12,9 +11,7 @@ import random
 import argparse
 from collections import OrderedDict
 from functools import partial
-
 import numpy as np
-# imports from your project — adjust if names differ
 from simulate_uav import build_grid_graph, UAV, apply_no_fly_zones
 from path_planning import compute_path, path_length
 
@@ -105,8 +102,9 @@ def sample_episode(G, pos, nofly_nodes, num_uavs, steps, planner_label_algo, dt=
                 "neighbors": neighbors,
             }
             # compute label (optimal next node using planner on the full graph)
-            label = label_next_node(G, pos, cur_node, goal_node, algo=planner_label_algo)
-            sample["label"] = label
+            next_action = label_next_node(G, pos, cur_node, goal_node, algo=planner_label_algo)
+            sample["label"] = next_action
+            sample["next_action"]= next_action
             samples.append(sample)
 
         # Advance environment: move UAVs one time step (we keep node reservations simple)
@@ -159,6 +157,7 @@ def flatten_sample(sample, max_neighbors=4):
 
     # label
     row["label"] = sample["label"]
+    row["next_action"]=sample["next_action"]
     return row
 
 # -------------------------

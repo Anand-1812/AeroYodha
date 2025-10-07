@@ -9,6 +9,9 @@ UAV_Traffic/results
 backend/node_modules
 backend/.env
 
+<<<<<<< HEAD
+=======
+>>>>>>> c77c181c4271088af732ab49af648662c50560b2
 # -------------------------------
 # Frontend (Node.js / React/Vite)
 # -------------------------------
