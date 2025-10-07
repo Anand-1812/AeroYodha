@@ -6,36 +6,54 @@ import networkx as nx
 from path_planning import compute_path  # path planning algorithms
 
 # -------------------------------
-# Utility
+# Approximate meters-to-degrees conversion
 # -------------------------------
-def euclid(a, b):
-    return math.hypot(a[0] - b[0], a[1] - b[1])
+def meters_to_deg(lat, dx, dy):
+    """
+    Convert meters offset (dx, dy) to lat/lon degrees.
+    dx -> east, dy -> north
+    """
+    dlat = dy / 111000  # 1 deg latitude ~ 111 km
+    dlon = dx / (111000 * math.cos(math.radians(lat)))  # 1 deg longitude ~ cos(lat)*111 km
+    return dlat, dlon
 
 # -------------------------------
-# Graph generation
+# Build geospatial grid around a real lat/lon
 # -------------------------------
-
-def build_grid_graph(rows=5, cols=5):
-    G = nx.grid_2d_graph(rows, cols)  # creates a lattice grid
-    pos = {(i, j): (i, j) for i, j in G.nodes()}  # positions = coordinates
+def build_real_grid(center_lat, center_lon, rows=12, cols=12, spacing_m=50):
+    """
+    center_lat, center_lon: center coordinates
+    rows, cols: grid size
+    spacing_m: distance between nodes in meters
+    """
+    G = nx.grid_2d_graph(rows, cols)
+    pos = {}
+    mapping = {}
     
-    # Convert to string node labels if you want consistency
-    mapping = {node: f"N{node[0]}_{node[1]}" for node in G.nodes()}
+    for i in range(rows):
+        for j in range(cols):
+            node_id = f"N{i}_{j}"
+            mapping[(i, j)] = node_id
+            dx = j * spacing_m - (cols // 2) * spacing_m
+            dy = i * spacing_m - (rows // 2) * spacing_m
+            dlat, dlon = meters_to_deg(center_lat, dx, dy)
+            pos[node_id] = (center_lat + dlat, center_lon + dlon)
+    
     G = nx.relabel_nodes(G, mapping)
-    pos = {mapping[node]: coord for node, coord in pos.items()}
 
-    # Add weights (e.g., Euclidean distance)
+    # Add approximate edge weights in meters
     for u, v in G.edges():
-        (x1, y1), (x2, y2) = pos[u], pos[v]
-        G[u][v]['weight'] = ((x1-x2)**2 + (y1-y2)**2)**0.5
+        lat1, lon1 = pos[u]
+        lat2, lon2 = pos[v]
+        dx = (lon2 - lon1) * 111000 * math.cos(math.radians(center_lat))
+        dy = (lat2 - lat1) * 111000
+        G[u][v]['weight'] = math.hypot(dx, dy)
 
     return G, pos
 
-
-#---------------------------------
-# No-fly zones application
-#---------------------------------
-
+# -------------------------------
+# Apply no-fly zones
+# -------------------------------
 def apply_no_fly_zones(G, nofly_nodes):
     VERY_HIGH = 1e6
     for node in nofly_nodes:
@@ -72,16 +90,8 @@ class UAV:
             self.next_node_index = 0
             return False
         self.path_nodes = path
-        # if current node is not at index 0 in returned path, set index appropriately
-        # try:
-        #     self.next_node_index = self.path_nodes.index(self.cur_node)
-        # except ValueError:
-            # if cur_node not in path (rare), set to 0
         self.next_node_index = 0
         return True
-
-    # def nearest_node(self):
-    #     return min(self.positions.keys(), key=lambda n: euclid(self.pos, self.positions[n]))
 
     def next_node(self):
         if self.reached or self.next_node_index >= len(self.path_nodes) - 1:
@@ -127,7 +137,6 @@ class UAV:
             if self.cur_node == self.goal_node:
                 self.reached = True
         else:
-            self.pos = self.pos.astype(float)
             self.pos += (vec / dist) * step
             self.trajectory.append(tuple(self.pos))
 
@@ -155,10 +164,12 @@ class UAV:
                 return
 
 # -------------------------------
-# Simulation helper for backend
+# Simulation helper
 # -------------------------------
-def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42):
-    G, pos = build_grid_graph(n_nodes=14, width=12, height=8, k_nearest=3, seed=seed)
+def run_simulation(center_lat=28.7041, center_lon=77.1025,
+                   num_uavs=5, dt=0.25, sim_time=60, seed=42):
+    random.seed(seed)
+    G, pos = build_real_grid(center_lat, center_lon, rows=12, cols=12, spacing_m=50)
 
     candidate_nodes = list(G.nodes())
     starts = random.sample(candidate_nodes, num_uavs)
@@ -201,6 +212,9 @@ def run_simulation(num_uavs=5, dt=0.25, sim_time=60, seed=42):
 
     return snapshots
 
+# -------------------------------
+# Entry Point for testing
+# -------------------------------
 if __name__ == "__main__":
     snaps = run_simulation()
     for s in snaps:
