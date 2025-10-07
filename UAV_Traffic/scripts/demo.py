@@ -95,6 +95,8 @@ def send_data_to_backend(uavs, step, url=BACKEND_URL):
 # No-fly penalties
 # -------------------------------
 
+#Bhai yeh wala add_nofly_zones mat hatana isse hi kaam kr rha hai
+
 def add_nofly_zones(G, percent):
     num_nodes = len(G.nodes)
     nofly_count = int(num_nodes * percent)
