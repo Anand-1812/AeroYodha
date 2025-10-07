@@ -27,8 +27,12 @@ export default function UAVSimulation() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
-      <Controls
+    <div className="row">
+      <div className="col-9">
+        <BasicMap running={running} uavs={uavs} />
+      </div>
+      <div className="col">
+        <Controls
         running={running}
         setRunning={setRunning}
         stop={stop}
@@ -37,10 +41,9 @@ export default function UAVSimulation() {
         uavCount={uavCount}
         setUavCount={setUavCount}
         handleAddUavs={handleAddUavs}
-      />
-      <div style={{ flex: 1 }}>
-        <BasicMap running={running} uavs={uavs} />
+        />
       </div>
+      
     </div>
   );
 }
