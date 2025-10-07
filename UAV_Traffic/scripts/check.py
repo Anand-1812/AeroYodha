@@ -1,9 +1,4 @@
-import os
-import pandas as pd
-dataset_path = "results/dataset_flat.csv"
-if not os.path.exists(dataset_path):
-    raise FileNotFoundError(f"{dataset_path} not found. Please generate dataset first.")
+from demo import build_grid_graph
 
-df = pd.read_csv(dataset_path)
-print(df.columns)
-# print(df.head())
+graph,pos=build_grid_graph(30,30)
+print(list(graph.nodes())[:10])

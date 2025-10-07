@@ -15,20 +15,29 @@ def euclid(a, b):
 # Graph generation
 # -------------------------------
 
-def build_grid_graph(rows=5, cols=5):
-    G = nx.grid_2d_graph(rows, cols)  # creates a lattice grid
-    pos = {(i, j): (i, j) for i, j in G.nodes()}  # positions = coordinates
+# def build_grid_graph(rows=30, cols=30):
+    # G = nx.grid_2d_graph(rows, cols)  # creates a lattice grid
+    # pos = {(i, j): (i, j) for i, j in G.nodes()}  # positions = coordinates
     
-    # Convert to string node labels if you want consistency
-    mapping = {node: f"N{node[0]}_{node[1]}" for node in G.nodes()}
-    G = nx.relabel_nodes(G, mapping)
-    pos = {mapping[node]: coord for node, coord in pos.items()}
+    # # Convert to string node labels if you want consistency
+    # mapping = {node: f"N{node[0]}_{node[1]}" for node in G.nodes()}
+    # G = nx.relabel_nodes(G, mapping)
+    # pos = {mapping[node]: coord for node, coord in pos.items()}
 
-    # Add weights (e.g., Euclidean distance)
+    # # Add weights (e.g., Euclidean distance)
+    # for u, v in G.edges():
+    #     (x1, y1), (x2, y2) = pos[u], pos[v]
+    #     G[u][v]['weight'] = ((x1-x2)**2 + (y1-y2)**2)**0.5
+
+    # return G, pos
+
+def build_grid_graph(rows, cols):
+    G = nx.grid_2d_graph(rows, cols)
+    pos = {(i, j): (j, -i) for i in range(rows) for j in range(cols)}
+    for (i, j) in G.nodes():
+        G.nodes[(i, j)]["pos"] = pos[(i, j)]
     for u, v in G.edges():
-        (x1, y1), (x2, y2) = pos[u], pos[v]
-        G[u][v]['weight'] = ((x1-x2)**2 + (y1-y2)**2)**0.5
-
+        G[u][v]["weight"] = 1.0
     return G, pos
 
 
@@ -36,15 +45,15 @@ def build_grid_graph(rows=5, cols=5):
 # No-fly zones application
 #---------------------------------
 
-def apply_no_fly_zones(G, nofly_nodes):
-    VERY_HIGH = 1e6
-    for node in nofly_nodes:
-        if node in G.nodes:
-            for neighbor in list(G.neighbors(node)):
-                if G.has_edge(node, neighbor):
-                    G[node][neighbor]['weight'] = VERY_HIGH
-                    G[neighbor][node]['weight'] = VERY_HIGH 
-    return G       
+# def apply_no_fly_zones(G, nofly_nodes):
+#     VERY_HIGH = 1e6
+#     for node in nofly_nodes:
+#         if node in G.nodes:
+#             for neighbor in list(G.neighbors(node)):
+#                 if G.has_edge(node, neighbor):
+#                     G[node][neighbor]['weight'] = VERY_HIGH
+#                     G[neighbor][node]['weight'] = VERY_HIGH 
+#     return G       
 
 # -------------------------------
 # UAV class

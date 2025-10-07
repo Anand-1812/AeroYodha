@@ -13,9 +13,9 @@ import requests
 # -------------------------------
 # Config
 # -------------------------------
-NOFLY_NODES = ["N13", "N4"]
-NOFLY_EDGES = []
+NOFLY_NODES = [] #["N13", "N4"]
 VERY_HIGH = 10**6
+percent=0.06
 
 model =joblib.load("results/uav_xgb_model.pkl")
 le =joblib.load("results/label_encoder.pkl")
@@ -94,29 +94,38 @@ def send_data_to_backend(uavs, step, url=BACKEND_URL):
 # -------------------------------
 # No-fly penalties
 # -------------------------------
-def apply_nofly_penalties(G, nofly_nodes=None, nofly_edges=None, penalty=VERY_HIGH):
-    nofly_nodes = nofly_nodes or []
 
-    # penalize edges adjacent to no-fly nodes
-    for node in nofly_nodes:
-        if node in G:
-            for neighbor in list(G.neighbors(node)):
-                if G.has_edge(node, neighbor):
-                    G[node][neighbor]['weight'] = penalty
-                    G[neighbor][node]['weight'] = penalty
-    for u, v in nofly_edges:
-        if G.has_edge(u, v):
-            G[u][v]['weight'] = penalty
-            G[v][u]['weight'] = penalty
+def add_nofly_zones(G, percent):
+    num_nodes = len(G.nodes)
+    nofly_count = int(num_nodes * percent)
+    nofly_nodes = random.sample(list(G.nodes()), nofly_count)
+    for n in nofly_nodes:
+        G.nodes[n]["nofly"] = True
+    return set(nofly_nodes)
+
+# def apply_nofly_penalties(G, nofly_nodes=None, nofly_edges=None, penalty=VERY_HIGH):
+#     nofly_nodes = nofly_nodes or []
+
+#     # penalize edges adjacent to no-fly nodes
+#     for node in nofly_nodes:
+#         if node in G:
+#             for neighbor in list(G.neighbors(node)):
+#                 if G.has_edge(node, neighbor):
+#                     G[node][neighbor]['weight'] = penalty
+#                     G[neighbor][node]['weight'] = penalty
+    # for u, v in nofly_edges:
+    #     if G.has_edge(u, v):
+    #         G[u][v]['weight'] = penalty
+    #         G[v][u]['weight'] = penalty
 
 # -------------------------------
 # Main Simulation
 # -------------------------------
-def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', seed=42):
+def merged_simulation(num_uavs=7, dt=0.25, sim_time=60, planner_algo='astar', seed=42):
     """Run UAV simulation with both visualization and backend/logging."""
     random.seed(seed)
     G, pos = build_grid_graph(rows=12, cols=8)
-    apply_nofly_penalties(G, nofly_nodes=NOFLY_NODES, nofly_edges=NOFLY_EDGES)
+    add_nofly_zones(G, nofly_nodes=NOFLY_NODES)
 
     # candidate nodes exclude isolated or no-fly
     candidate_nodes = [n for n in G.nodes() if G.degree[n] > 0 and n not in NOFLY_NODES]
@@ -166,8 +175,17 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
 
             # Compute neighbor features (similar to how you trained)
             neighbors = sorted(list(G.neighbors(u.cur_node)))
-            max_neighbors = 4
+            next_idx = model.predict(x)[0]
+            max_neighbors = 6
             feature_vector = []
+            if 0 <= next_idx < len(neighbors):
+                next_node = neighbors[next_idx]
+                if next_node not in NOFLY_NODES and next_node not in node_reservation:
+                    u.cur_node = next_node
+                    u.pos = pos[next_node]
+            else:
+                pass  #fallback
+
             for i in range(max_neighbors):
                 if i < len(neighbors):
                     nb = neighbors[i]
@@ -210,8 +228,8 @@ def merged_simulation(num_uavs=5, dt=0.25, sim_time=60, planner_algo='astar', se
         # Send data to backend
         send_data_to_backend(uavs, step)
 
-        # Send data to backend
-        send_data_to_backend(uavs, step)
+        # # Send data to backend
+        # send_data_to_backend(uavs, step)
 
         # Visualization per step
         xs = [u.pos[0] for u in uavs]
