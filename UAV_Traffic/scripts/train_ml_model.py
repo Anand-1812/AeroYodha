@@ -12,13 +12,27 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 # ------------------------------------------------------------
 # LOAD DATA
 # ------------------------------------------------------------
-df = pd.read_csv(os.path.join(RESULTS_DIR, "dataset_flat.csv"))
+df = pd.read_csv(os.path.join(RESULTS_DIR, "uav_dataset.csv"))
 
+# ------------------------------------------------------------
+# HANDLE NOFLY_ZONES COLUMN
+# Convert list of tuples to string for XGBoost compatibility
+# ------------------------------------------------------------
+if 'nofly_zones' in df.columns:
+    df['nofly_zones'] = df['nofly_zones'].apply(lambda x: str(x))  # now XGBoost sees it as object/string
+
+# ------------------------------------------------------------
 # Separate features and target
-X = df.drop(columns=["next_action"])
-y = df["next_action"]
+# ------------------------------------------------------------
+X = df.drop(columns=["next_move"])
+y = df["next_move"]
 
-# Encode labels
+# Encode all object columns in X
+for col in X.select_dtypes(include='object').columns:
+    le = LabelEncoder()
+    X[col] = le.fit_transform(X[col])
+
+# Encode target labels
 label_encoder = LabelEncoder()
 y_encoded = label_encoder.fit_transform(y)
 
@@ -26,7 +40,9 @@ y_encoded = label_encoder.fit_transform(y)
 # TRAIN / TEST SPLIT
 # ------------------------------------------------------------
 from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y_encoded, test_size=0.2, random_state=42
+)
 
 # ------------------------------------------------------------
 # MODEL TRAINING
@@ -39,7 +55,6 @@ model = XGBClassifier(
     colsample_bytree=0.9,
     objective="multi:softmax",
     eval_metric="mlogloss",
-    use_label_encoder=False,
     random_state=42
 )
 

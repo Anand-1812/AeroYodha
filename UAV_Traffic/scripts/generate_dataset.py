@@ -1,10 +1,3 @@
-"""
-Generates UAV dataset for ML training (22-feature vector)
-Outputs:
- - results/dataset.jsonl
- - results/dataset_flat.csv
- - results/dataset_train.csv, results/dataset_test.csv
-"""
 import os
 import json
 import random
@@ -12,8 +5,6 @@ import argparse
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
-# from collections import OrderedDict
-# import numpy as np
 
 from simulate_uav import build_grid_graph, UAV
 from path_planning import compute_path
@@ -21,8 +12,6 @@ from demo import add_nofly_zones
 
 MAX_NEIGHBORS = 4
 
-
-# RESULTS_DIR = os.path.join(os.path.dirname(__file__), "..", "results")
 RESULTS_DIR = "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -37,10 +26,6 @@ def generate_random_coordinates(rows, cols):
     return (r,c)
 
 def generate_dataset(args):
-    """
-    Generate UAV navigation dataset with random start/goal/no-fly zones
-    and labeled next moves for ML training.
-    """
 
     random.seed(args.seed)
     results_dir = Path("results")
@@ -54,9 +39,7 @@ def generate_dataset(args):
     for ep in tqdm(range(args.episodes), desc="Generating Episodes"):
         # Build grid and apply no-fly zones
         graph, pos = build_grid_graph(args.rows, args.cols)
-        # graph, pos = add_nofly_zones(graph, no_fly_zones)
         no_fly_zones = add_nofly_zones(graph, percent=args.nofly_percent)
-        # print(f"Applied {len(no_fly_zones)} no-fly zones ({args.nofly_percent*100:.0f}% of grid)")
 
         for _ in range(args.num_uavs):
             start = generate_random_coordinates(args.rows, args.cols)
@@ -67,7 +50,6 @@ def generate_dataset(args):
                 continue
 
             try:
-                # Compute shortest path using your preferred algorithm
                 path = compute_path(graph, pos, start, goal, algo=args.label_algo)
 
                 if not path or len(path) < 2:
@@ -77,8 +59,7 @@ def generate_dataset(args):
                 for i in range(len(path) - 1):
                     current = path[i]
                     next_step = path[i + 1]
-                    # dx = next_step[0] - current[0]
-                    # dy = next_step[1] - current[1]
+
                     curr_x , curr_y = current
                     next_x, next_y = next_step
                     goal_x, goal_y = goal
