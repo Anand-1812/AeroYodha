@@ -1,10 +1,12 @@
+# backend_connector.py
 import requests
-import json
 
-def send_data_to_backend(uavs, step, url="http://localhost:8000/api/v1/uavs/"):
+# Set your backend URL here
+BACKEND_URL = "http://localhost:8000/api/v1/uavs"
+
+def send_data_to_backend(uavs, step, nofly_nodes):
     """
-    Send a step snapshot of UAVs to the backend.
-    Matches the MongoDB UAV snapshot schema.
+    Send a simulation step to the backend including UAVs and no-fly zones.
     """
     data = {
         "step": step,
@@ -13,41 +15,18 @@ def send_data_to_backend(uavs, step, url="http://localhost:8000/api/v1/uavs/"):
                 "id": u.id,
                 "x": float(u.pos[0]),
                 "y": float(u.pos[1]),
-                "start": u.start_node,
-                "goal": u.goal_node,
+                "start": list(u.start_node),
+                "goal": list(u.goal_node),
                 "reached": u.reached,
-                "path": u.path_nodes,
-            }
-            for u in uavs
-        ]
+                "path": [list(n) for n in u.path_nodes]
+            } for u in uavs
+        ],
+        "noFlyZones": [list(n) for n in nofly_nodes]
     }
 
     try:
-        resp = requests.post(url, json=data, timeout=5)
+        resp = requests.post(BACKEND_URL, json=data, timeout=5)
         resp.raise_for_status()
         print(f"✅ Sent step {step} to backend")
     except Exception as e:
-        print(f"❌ Error sending data at step {step}: {e}")
-
-
-def log_state(step, uavs, file="sim_log.jsonl"):
-    """
-    Append simulation state to local JSONL file.
-    Each line = one step snapshot.
-    """
-    record = {
-        "step": step,
-        "uavs": [
-            {
-                "id": u.id,
-                "x": float(u.pos[0]),
-                "y": float(u.pos[1]),
-                "reached": u.reached
-            }
-            for u in uavs
-        ]
-    }
-
-    with open(file, "a") as f:
-        f.write(json.dumps(record) + "\n")
-
+        print(f"❌ Error sending step {step} to backend: {e}")

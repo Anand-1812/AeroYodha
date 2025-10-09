@@ -1,15 +1,16 @@
+# demo.py
 import os
 import json
 import random
 import joblib
 import numpy as np
 import matplotlib.pyplot as plt
-import networkx as nx
 import pandas as pd
 
 from simulate_uav import build_grid_graph, UAV
 from path_planning import compute_path
 from visualization_helper import export_graph, draw_graph_with_path
+from backend_connector import send_data_to_backend  # Import the sender
 
 # -------------------------------
 # Configuration
@@ -20,7 +21,7 @@ os.makedirs(RESULTS_DIR, exist_ok=True)
 MODEL_PATH = os.path.join(RESULTS_DIR, "uav_xgb_ml.pkl")
 ENCODER_PATH = os.path.join(RESULTS_DIR, "label_encoder.pkl")
 
-# Load trained ML model and label encoder
+# Load trained ML model and encoder
 try:
     model = joblib.load(MODEL_PATH)
     label_encoder = joblib.load(ENCODER_PATH)
@@ -39,8 +40,7 @@ def add_nofly_zones(G, percent=0.02):
     nofly_nodes = random.sample(list(G.nodes()), nofly_count)
     for n in nofly_nodes:
         G.nodes[n]["nofly"] = True
-    return set(nofly_nodes)
-
+    return list(nofly_nodes)
 
 def predict_next_move(model, label_encoder, u, goal_node, nofly_nodes):
     """Predict next move using ML model, handle stuck behavior and fallback if bad."""
@@ -82,7 +82,6 @@ def predict_next_move(model, label_encoder, u, goal_node, nofly_nodes):
 
 
 def apply_move(uav, move, G, pos):
-    """Apply the predicted move to the UAV."""
     cur_x, cur_y = uav.cur_node
     if move == "UP":
         next_node = (cur_x - 1, cur_y)
@@ -138,11 +137,6 @@ def merged_simulation(num_uavs=7, dt=0.25, sim_time=60, planner_algo="astar", se
         uav.compute_path(algo=planner_algo)
         uavs.append(uav)
 
-    print("🚁 UAVs initialized:")
-    for u in uavs:
-        print(f"  UAV{u.id}: start={u.start_node}, goal={u.goal_node}, initial_path_len={len(u.path_nodes)}")
-
-    # Setup visualization
     if visualize:
         fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -201,20 +195,8 @@ def merged_simulation(num_uavs=7, dt=0.25, sim_time=60, planner_algo="astar", se
             if u.cur_node == u.goal_node:
                 u.reached = True
 
-        # Record snapshot
-        snapshot = [
-            {
-                "id": u.id,
-                "x": float(u.pos[0]),
-                "y": float(u.pos[1]),
-                "start": u.start_node,
-                "goal": u.goal_node,
-                "reached": u.reached,
-                "path": u.path_nodes,
-            }
-            for u in uavs
-        ]
-        sim_snapshots.append(snapshot)
+        # Send each step to backend
+        send_data_to_backend(uavs, step, nofly_nodes)
 
         # Visualization
         if visualize:
@@ -227,21 +209,27 @@ def merged_simulation(num_uavs=7, dt=0.25, sim_time=60, planner_algo="astar", se
                 ax.text(u.pos[0], u.pos[1] + 0.08, f"U{u.id}", fontsize=8)
             ax.set_title(f"Step {step} / {steps}")
             plt.pause(0.05)
+            plt.pause(0.05)
 
         if all(u.reached for u in uavs):
             print(f"✅ All UAVs reached goals at step {step}")
             break
 
-    # -------------------------------
-    # Save results
-    # -------------------------------
+    # Save final results locally
     with open(os.path.join(RESULTS_DIR, "sim_output.json"), "w") as f:
-        json.dump(sim_snapshots, f, indent=4)
-    print("💾 Saved simulation output to results/sim_output.json")
+        json.dump([
+            {
+                "id": u.id,
+                "x": float(u.pos[0]),
+                "y": float(u.pos[1]),
+                "start": list(u.start_node),
+                "goal": list(u.goal_node),
+                "reached": u.reached,
+                "path": [list(n) for n in u.path_nodes]
+            } for u in uavs
+        ], f, indent=4)
 
     export_graph(G, pos, filepath=os.path.join(RESULTS_DIR, "graph.json"))
-    print("💾 Saved graph to results/graph.json")
-
     if visualize:
         plt.close(fig)
 
@@ -250,5 +238,5 @@ def merged_simulation(num_uavs=7, dt=0.25, sim_time=60, planner_algo="astar", se
 # Entry Point
 # -------------------------------
 if __name__ == "__main__":
-    merged_simulation(num_uavs=7, dt=0.25, sim_time=60, planner_algo="astar", visualize=True)
+    merged_simulation()
     print("🎯 Simulation completed successfully.")
