@@ -11,6 +11,7 @@ import {
 import L from "leaflet";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
 import herodrone from "../../assets/hero-drone.png";
+import otherdrone from "../../assets/hero-drone-red.png"; // <-- New marker for first drone
 
 // === Rectangle bounds ===
 const rectangle1 = [
@@ -51,23 +52,27 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// === UAV icon ===
-const uavIcon = new L.Icon({
-  iconUrl: herodrone,
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
-});
-
-// === UAV COMPONENT (smooth movement + path) ===
-function UAV({ id, trajectory, speed, running }) {
+// === UAV COMPONENT (smooth movement + glowing fading path) ===
+function UAV({ id, trajectory, speed, running, isHero }) {
   const [index, setIndex] = useState(0);
   const [latlng, setLatlng] = useState(() => {
     const [r, c] = trajectory[0];
     return matrixToDelhiCoords(r, c);
   });
   const [duration, setDuration] = useState(0);
-  const [pathTaken, setPathTaken] = useState([latlng]); // store traveled path
+  const [pathTaken, setPathTaken] = useState([latlng]);
+
+  // Different color for each UAV trail
+  const colors = ["#ff4d00ff", "#ff4d00ff", "#ffb300ff", "#80ff00ff", "#3700ffff"];
+  const color = colors[id % colors.length];
+
+  // Icon: hero UAV gets a different marker
+  const icon = new L.Icon({
+    iconUrl: isHero ? otherdrone : herodrone,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+  });
 
   useEffect(() => {
     if (!running) return;
@@ -84,29 +89,37 @@ function UAV({ id, trajectory, speed, running }) {
     setLatlng([lat2, lon2]);
     setDuration(time);
 
-    // after reaching next point, append to pathTaken
     const timer = setTimeout(() => {
-      setPathTaken((prev) => [...prev, [lat2, lon2]]);
+      setPathTaken((prev) => [...prev.slice(-30), [lat2, lon2]]);
       setIndex((p) => p + 1);
     }, time);
 
     return () => clearTimeout(timer);
   }, [index, running, trajectory, speed]);
 
-  return (
-    <>
-      {/* Path Line */}
+  // Fading trail segments
+  const fadingSegments = pathTaken.map((_, i, arr) => {
+    if (i === arr.length - 1) return null;
+    const opacity = (i + 1) / arr.length;
+    return (
       <Polyline
-        positions={pathTaken}
+        key={i}
+        positions={[arr[i], arr[i + 1]]}
         pathOptions={{
-          color: "blue",
-          weight: 3,
-          opacity: 0.6,
+          color,
+          weight: 4,
+          opacity,
+          smoothFactor: 1,
         }}
       />
+    );
+  });
 
-      {/* UAV Marker */}
-      <ReactLeafletDriftMarker position={latlng} duration={duration} icon={uavIcon}>
+  return (
+    <>
+      {fadingSegments}
+
+      <ReactLeafletDriftMarker position={latlng} duration={duration} icon={icon}>
         <Popup>
           UAV {id} <br />
           Speed: {speed.toFixed(2)} m/s <br />
@@ -171,18 +184,17 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           attribution="&copy; OpenStreetMap contributors"
         />
 
-        {/* === UAVs with Paths === */}
-        {uavs.map((uav) => (
+        {uavs.map((uav, idx) => (
           <UAV
             key={uav.id}
             id={uav.id}
             trajectory={uav.path}
             speed={40 + Math.random() * 20}
             running={running}
+            isHero={idx === 0} // first UAV uses otherdrone icon
           />
         ))}
 
-        {/* Start & End markers for Hero UAV */}
         {startPos && (
           <Marker position={startPos}>
             <Popup>Hero UAV Start</Popup>
@@ -194,14 +206,12 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           </Marker>
         )}
 
-        {/* Geofences */}
         <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
-        {/* <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
+        <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
         {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
-        ))} */}
+        ))}
 
-        {/* Optional grid */}
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
             const [lat, lon] = matrixToDelhiCoords(r, c, matrixSize);
