@@ -6,6 +6,7 @@ import {
   Rectangle,
   CircleMarker,
   Marker,
+  Polyline,
 } from "react-leaflet";
 import L from "leaflet";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
@@ -58,7 +59,7 @@ const uavIcon = new L.Icon({
   popupAnchor: [0, -40],
 });
 
-// === UAV COMPONENT (smooth movement using trajectory) ===
+// === UAV COMPONENT (smooth movement + path) ===
 function UAV({ id, trajectory, speed, running }) {
   const [index, setIndex] = useState(0);
   const [latlng, setLatlng] = useState(() => {
@@ -66,10 +67,11 @@ function UAV({ id, trajectory, speed, running }) {
     return matrixToDelhiCoords(r, c);
   });
   const [duration, setDuration] = useState(0);
+  const [pathTaken, setPathTaken] = useState([latlng]); // store traveled path
 
   useEffect(() => {
-    if (!running) return; // paused
-    if (index >= trajectory.length - 1) return; // reached end
+    if (!running) return;
+    if (index >= trajectory.length - 1) return;
 
     const [r1, c1] = trajectory[index];
     const [r2, c2] = trajectory[index + 1];
@@ -82,18 +84,36 @@ function UAV({ id, trajectory, speed, running }) {
     setLatlng([lat2, lon2]);
     setDuration(time);
 
-    const timer = setTimeout(() => setIndex((p) => p + 1), time);
+    // after reaching next point, append to pathTaken
+    const timer = setTimeout(() => {
+      setPathTaken((prev) => [...prev, [lat2, lon2]]);
+      setIndex((p) => p + 1);
+    }, time);
+
     return () => clearTimeout(timer);
   }, [index, running, trajectory, speed]);
 
   return (
-    <ReactLeafletDriftMarker position={latlng} duration={duration} icon={uavIcon}>
-      <Popup>
-        UAV {id} <br />
-        Speed: {speed.toFixed(2)} m/s <br />
-        Waypoint {index + 1}/{trajectory.length}
-      </Popup>
-    </ReactLeafletDriftMarker>
+    <>
+      {/* Path Line */}
+      <Polyline
+        positions={pathTaken}
+        pathOptions={{
+          color: "blue",
+          weight: 3,
+          opacity: 0.6,
+        }}
+      />
+
+      {/* UAV Marker */}
+      <ReactLeafletDriftMarker position={latlng} duration={duration} icon={uavIcon}>
+        <Popup>
+          UAV {id} <br />
+          Speed: {speed.toFixed(2)} m/s <br />
+          Waypoint {index + 1}/{trajectory.length}
+        </Popup>
+      </ReactLeafletDriftMarker>
+    </>
   );
 }
 
@@ -131,23 +151,12 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
     setGeofences(generateRandomGeofences(matrixSize, 4));
   }, []);
 
-  // Pick the first UAV as hero
   const heroUAV = uavs.length > 0 ? uavs[0] : null;
   const startPos = heroUAV ? matrixToDelhiCoords(...heroUAV.path[0]) : null;
   const endPos =
     heroUAV && heroUAV.path.length > 1
       ? matrixToDelhiCoords(...heroUAV.path[heroUAV.path.length - 1])
       : null;
-
-  // Convert noFlyZones from data into Delhi coordinates
-  const zoneRects = noFlyZones.map(([r, c]) => {
-    const [lat1, lon1] = matrixToDelhiCoords(r, c, matrixSize);
-    const [lat2, lon2] = matrixToDelhiCoords(r + 1, c + 1, matrixSize);
-    return [
-      [lat1, lon1],
-      [lat2, lon2],
-    ];
-  });
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
@@ -162,17 +171,18 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           attribution="&copy; OpenStreetMap contributors"
         />
 
-        {/* UAVs */}
+        {/* === UAVs with Paths === */}
         {uavs.map((uav) => (
           <UAV
             key={uav.id}
-            trajectory={uav.path} // using real path from data
-            speed={40 + Math.random() * 20} // keep speed
+            id={uav.id}
+            trajectory={uav.path}
+            speed={40 + Math.random() * 20}
             running={running}
           />
         ))}
 
-        {/* Show start and end for hero UAV */}
+        {/* Start & End markers for Hero UAV */}
         {startPos && (
           <Marker position={startPos}>
             <Popup>Hero UAV Start</Popup>
@@ -184,23 +194,14 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           </Marker>
         )}
 
-        {/* Static & Random Geofences */}
+        {/* Geofences */}
         <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
         <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
         {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
         ))}
 
-        {/* No-Fly Zones from data */}
-        {/* {zoneRects.map((bounds, idx) => (
-          <Rectangle
-            key={`zone-${idx}`}
-            bounds={bounds}
-            pathOptions={{ color: "orange", fillOpacity: 0.4 }}
-          />
-        ))} */}
-
-        {/* Optional Grid */}
+        {/* Optional grid */}
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
             const [lat, lon] = matrixToDelhiCoords(r, c, matrixSize);
