@@ -189,7 +189,7 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
             key={uav.id}
             id={uav.id}
             trajectory={uav.path}
-            speed={40 + Math.random() * 20}
+            speed={10 + Math.random() * 5}
             running={running}
             isHero={idx === 0} // first UAV uses otherdrone icon
           />
@@ -206,24 +206,24 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           </Marker>
         )}
 
-        <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
-        <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
+        {/* <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} /> */}
+        {/* <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
         {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
-        ))}
+        ))} */}
 
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
             const [lat, lon] = matrixToDelhiCoords(r, c, matrixSize);
-            return (
-              <CircleMarker
-                key={`${r}-${c}`}
-                center={[lat, lon]}
-                radius={0.1}
-                color="red"
-                fillOpacity={0.0}
-              />
-            );
+            // return (
+            //   <CircleMarker
+            //     key={`${r}-${c}`}
+            //     center={[lat, lon]}
+            //     radius={0.1}
+            //     color="red"
+            //     fillOpacity={0.0}
+            //   />
+            // );
           })
         )}
       </MapContainer>
