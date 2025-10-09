@@ -131,12 +131,12 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
     setGeofences(generateRandomGeofences(matrixSize, 4));
   }, []);
 
-  // Pick a random UAV to show start and end
-  const randomUAV = uavs[Math.floor(Math.random() * uavs.length)];
-  const startPos = randomUAV ? matrixToDelhiCoords(...randomUAV.path[0]) : null;
+  // Pick the first UAV as hero
+  const heroUAV = uavs.length > 0 ? uavs[0] : null;
+  const startPos = heroUAV ? matrixToDelhiCoords(...heroUAV.path[0]) : null;
   const endPos =
-    randomUAV && randomUAV.path.length > 1
-      ? matrixToDelhiCoords(...randomUAV.path[randomUAV.path.length - 1])
+    heroUAV && heroUAV.path.length > 1
+      ? matrixToDelhiCoords(...heroUAV.path[heroUAV.path.length - 1])
       : null;
 
   // Convert noFlyZones from data into Delhi coordinates
@@ -167,20 +167,20 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           <UAV
             key={uav.id}
             trajectory={uav.path} // using real path from data
-            speed={80 + Math.random() * 50} // keep speed
+            speed={40 + Math.random() * 20} // keep speed
             running={running}
           />
         ))}
 
-        {/* Show start and end for random UAV */}
+        {/* Show start and end for hero UAV */}
         {startPos && (
           <Marker position={startPos}>
-            <Popup>Random UAV Start</Popup>
+            <Popup>Hero UAV Start</Popup>
           </Marker>
         )}
         {endPos && (
           <Marker position={endPos}>
-            <Popup>Random UAV Destination</Popup>
+            <Popup>Hero UAV Destination</Popup>
           </Marker>
         )}
 
