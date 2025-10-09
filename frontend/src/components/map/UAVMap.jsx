@@ -5,6 +5,7 @@ import {
   Popup,
   Rectangle,
   CircleMarker,
+  Marker,
 } from "react-leaflet";
 import L from "leaflet";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
@@ -130,6 +131,14 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
     setGeofences(generateRandomGeofences(matrixSize, 4));
   }, []);
 
+  // Pick a random UAV to show start and end
+  const randomUAV = uavs[Math.floor(Math.random() * uavs.length)];
+  const startPos = randomUAV ? matrixToDelhiCoords(...randomUAV.path[0]) : null;
+  const endPos =
+    randomUAV && randomUAV.path.length > 1
+      ? matrixToDelhiCoords(...randomUAV.path[randomUAV.path.length - 1])
+      : null;
+
   // Convert noFlyZones from data into Delhi coordinates
   const zoneRects = noFlyZones.map(([r, c]) => {
     const [lat1, lon1] = matrixToDelhiCoords(r, c, matrixSize);
@@ -163,6 +172,18 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           />
         ))}
 
+        {/* Show start and end for random UAV */}
+        {startPos && (
+          <Marker position={startPos}>
+            <Popup>Random UAV Start</Popup>
+          </Marker>
+        )}
+        {endPos && (
+          <Marker position={endPos}>
+            <Popup>Random UAV Destination</Popup>
+          </Marker>
+        )}
+
         {/* Static & Random Geofences */}
         <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
         <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
@@ -178,6 +199,7 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
             pathOptions={{ color: "orange", fillOpacity: 0.4 }}
           />
         ))} */}
+
         {/* Optional Grid */}
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
