@@ -121,7 +121,7 @@ function generateRandomGeofences(matrixSize, count = 3) {
 }
 
 // === MAIN MAP ===
-export default function BasicMap({ running, uavs }) {
+export default function BasicMap({ running, uavs, noFlyZones = [] }) {
   const matrixSize = 30;
   const rectangleOptions = { color: "black" };
   const [geofences, setGeofences] = useState([]);
@@ -129,6 +129,16 @@ export default function BasicMap({ running, uavs }) {
   useEffect(() => {
     setGeofences(generateRandomGeofences(matrixSize, 4));
   }, []);
+
+  // Convert noFlyZones from data into Delhi coordinates
+  const zoneRects = noFlyZones.map(([r, c]) => {
+    const [lat1, lon1] = matrixToDelhiCoords(r, c, matrixSize);
+    const [lat2, lon2] = matrixToDelhiCoords(r + 1, c + 1, matrixSize);
+    return [
+      [lat1, lon1],
+      [lat2, lon2],
+    ];
+  });
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
@@ -147,9 +157,8 @@ export default function BasicMap({ running, uavs }) {
         {uavs.map((uav) => (
           <UAV
             key={uav.id}
-            id={uav.id}
-            trajectory={uav.trajectory}
-            speed={uav.speed}
+            trajectory={uav.path} // using real path from data
+            speed={80 + Math.random() * 50} // keep speed
             running={running}
           />
         ))}
@@ -161,6 +170,14 @@ export default function BasicMap({ running, uavs }) {
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
         ))}
 
+        {/* No-Fly Zones from data */}
+        {/* {zoneRects.map((bounds, idx) => (
+          <Rectangle
+            key={`zone-${idx}`}
+            bounds={bounds}
+            pathOptions={{ color: "orange", fillOpacity: 0.4 }}
+          />
+        ))} */}
         {/* Optional Grid */}
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
