@@ -26,7 +26,7 @@ const stepSchema = new Schema(
 );
 
 // Automatically delete after 2 mins (like before)
-stepSchema.index({ createdAt: 1 }, { expireAfterSeconds: 120 });
+stepSchema.index({ createdAt: 1 }, { expireAfterSeconds: 360 });
 
 export const StepSnapshot = mongoose.model("StepSnapshot", stepSchema);
 

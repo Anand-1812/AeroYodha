@@ -2,7 +2,7 @@
 import requests
 
 # Set your backend URL here
-BACKEND_URL = "http://localhost:8000/api/v1/uavs"
+BACKEND_URL = "http://localhost:8000/api/v1/uavs/step"
 
 def send_data_to_backend(uavs, step, nofly_nodes):
     """
