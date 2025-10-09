@@ -1,18 +1,17 @@
-// routes/simulation.js
 import express from "express";
 import {
   createStep,
   getLatestStep,
   getSteps,
   streamStepsSSE,
-} from "../controllers/simulationController.js";
+} from "../controllers/uav.controller.js";
 
 const uavRouter = express.Router();
 
-router.post("/step", createStep);
-router.get("/latest", getLatestStep);
-router.get("/steps", getSteps);
-router.get("/stream", streamStepsSSE);
+uavRouter.post("/step", createStep);
+uavRouter.get("/latest", getLatestStep);
+uavRouter.get("/steps", getSteps);
+uavRouter.get("/stream", streamStepsSSE);
 
 export default uavRouter;
 

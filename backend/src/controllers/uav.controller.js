@@ -1,5 +1,5 @@
 // controllers/simulationController.js
-import StepSnapshot from "../models/StepSnapshot.js";
+import { StepSnapshot } from "../models/uav.model.js";
 
 /**
  * POST /api/simulation/step
