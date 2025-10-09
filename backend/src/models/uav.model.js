@@ -1,29 +1,32 @@
-import mongoose, { Schema } from "mongoose";
+// models/StepSnapshot.js
+import mongoose from "mongoose";
+const { Schema } = mongoose;
 
-// UAV model
-const uavSchema = new Schema({
-  id: { type: Number, required: true },
-  x: { type: Number, required: true },
-  y: { type: Number, required: true },
-  start: { type: String, required: true },
-  goal: { type: String, required: true },
-  reached: { type: Boolean, default: false },
-  path: [{ type: String }]
-});
+// Matches each UAV dict from demo.py exactly
+const uavSchema = new Schema(
+  {
+    id: { type: Number, required: true },
+    x: { type: Number, required: true },
+    y: { type: Number, required: true },
+    start: { type: [Number], required: true },  // [row, col]
+    goal: { type: [Number], required: true },   // [row, col]
+    reached: { type: Boolean, default: false },
+    path: { type: [[Number]], default: [] },    // list of [row, col]
+  },
+  { _id: false }
+);
 
 const stepSchema = new Schema(
   {
     step: { type: Number, required: true },
-    uavs: [uavSchema],
-
-    // for geo fencing
-    noFlyZones: [{ type: String }]
+    uavs: { type: [uavSchema], default: [] },
+    noFlyZones: { type: [[Number]], default: [] },
   },
   { timestamps: true }
 );
 
-// Auto-delete after 2 mins
+// Automatically delete after 2 mins (like before)
 stepSchema.index({ createdAt: 1 }, { expireAfterSeconds: 120 });
 
-export const UAV = mongoose.model("StepSnapshot", stepSchema);
+export const StepSnapshot = mongoose.model("StepSnapshot", stepSchema);
 
