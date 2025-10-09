@@ -196,10 +196,10 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
 
         {/* Geofences */}
         <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
-        <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
+        {/* <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
         {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
-        ))}
+        ))} */}
 
         {/* Optional grid */}
         {Array.from({ length: matrixSize }).map((_, r) =>
