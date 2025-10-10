@@ -25,6 +25,6 @@ const stepSchema = new Schema(
   { timestamps: true }
 );
 
-stepSchema.index({ createdAt: 1 }, { expireAfterSeconds: 36000  });
+stepSchema.index({ createdAt: 1 }, { expireAfterSeconds: 7 * 24 * 60 * 60 }); // 7 days
 export const StepSnapshot = mongoose.model("StepSnapshot", stepSchema);
 
