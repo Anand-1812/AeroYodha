@@ -5,10 +5,13 @@ import {
   Popup,
   Rectangle,
   CircleMarker,
+  Marker,
+  Polyline,
 } from "react-leaflet";
 import L from "leaflet";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
 import herodrone from "../../assets/hero-drone.png";
+import otherdrone from "../../assets/hero-drone-red.png"; // <-- New marker for first drone
 
 // === Rectangle bounds ===
 const rectangle1 = [
@@ -49,26 +52,31 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// === UAV icon ===
-const uavIcon = new L.Icon({
-  iconUrl: herodrone,
-  iconSize: [40, 40],
-  iconAnchor: [20, 40],
-  popupAnchor: [0, -40],
-});
-
-// === UAV COMPONENT (smooth movement using trajectory) ===
-function UAV({ id, trajectory, speed, running }) {
+// === UAV COMPONENT (smooth movement + glowing fading path) ===
+function UAV({ id, trajectory, speed, running, isHero }) {
   const [index, setIndex] = useState(0);
   const [latlng, setLatlng] = useState(() => {
     const [r, c] = trajectory[0];
     return matrixToDelhiCoords(r, c);
   });
   const [duration, setDuration] = useState(0);
+  const [pathTaken, setPathTaken] = useState([latlng]);
+
+  // Different color for each UAV trail
+  const colors = ["#ff4d00ff", "#ff4d00ff", "#ffb300ff", "#80ff00ff", "#3700ffff"];
+  const color = colors[id % colors.length];
+
+  // Icon: hero UAV gets a different marker
+  const icon = new L.Icon({
+    iconUrl: isHero ? otherdrone : herodrone,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -40],
+  });
 
   useEffect(() => {
-    if (!running) return; // paused
-    if (index >= trajectory.length - 1) return; // reached end
+    if (!running) return;
+    if (index >= trajectory.length - 1) return;
 
     const [r1, c1] = trajectory[index];
     const [r2, c2] = trajectory[index + 1];
@@ -81,18 +89,44 @@ function UAV({ id, trajectory, speed, running }) {
     setLatlng([lat2, lon2]);
     setDuration(time);
 
-    const timer = setTimeout(() => setIndex((p) => p + 1), time);
+    const timer = setTimeout(() => {
+      setPathTaken((prev) => [...prev.slice(-30), [lat2, lon2]]);
+      setIndex((p) => p + 1);
+    }, time);
+
     return () => clearTimeout(timer);
   }, [index, running, trajectory, speed]);
 
+  // Fading trail segments
+  const fadingSegments = pathTaken.map((_, i, arr) => {
+    if (i === arr.length - 1) return null;
+    const opacity = (i + 1) / arr.length;
+    return (
+      <Polyline
+        key={i}
+        positions={[arr[i], arr[i + 1]]}
+        pathOptions={{
+          color,
+          weight: 4,
+          opacity,
+          smoothFactor: 1,
+        }}
+      />
+    );
+  });
+
   return (
-    <ReactLeafletDriftMarker position={latlng} duration={duration} icon={uavIcon}>
-      <Popup>
-        UAV {id} <br />
-        Speed: {speed.toFixed(2)} m/s <br />
-        Waypoint {index + 1}/{trajectory.length}
-      </Popup>
-    </ReactLeafletDriftMarker>
+    <>
+      {fadingSegments}
+
+      <ReactLeafletDriftMarker position={latlng} duration={duration} icon={icon}>
+        <Popup>
+          UAV {id} <br />
+          Speed: {speed.toFixed(2)} m/s <br />
+          Waypoint {index + 1}/{trajectory.length}
+        </Popup>
+      </ReactLeafletDriftMarker>
+    </>
   );
 }
 
@@ -121,7 +155,7 @@ function generateRandomGeofences(matrixSize, count = 3) {
 }
 
 // === MAIN MAP ===
-export default function BasicMap({ running, uavs }) {
+export default function BasicMap({ running, uavs, noFlyZones = [] }) {
   const matrixSize = 30;
   const rectangleOptions = { color: "black" };
   const [geofences, setGeofences] = useState([]);
@@ -129,6 +163,13 @@ export default function BasicMap({ running, uavs }) {
   useEffect(() => {
     setGeofences(generateRandomGeofences(matrixSize, 4));
   }, []);
+
+  const heroUAV = uavs.length > 0 ? uavs[0] : null;
+  const startPos = heroUAV ? matrixToDelhiCoords(...heroUAV.path[0]) : null;
+  const endPos =
+    heroUAV && heroUAV.path.length > 1
+      ? matrixToDelhiCoords(...heroUAV.path[heroUAV.path.length - 1])
+      : null;
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
@@ -143,37 +184,46 @@ export default function BasicMap({ running, uavs }) {
           attribution="&copy; OpenStreetMap contributors"
         />
 
-        {/* UAVs */}
-        {uavs.map((uav) => (
+        {uavs.map((uav, idx) => (
           <UAV
             key={uav.id}
             id={uav.id}
-            trajectory={uav.trajectory}
-            speed={uav.speed}
+            trajectory={uav.path}
+            speed={10 + Math.random() * 5}
             running={running}
+            isHero={idx === 0} // first UAV uses otherdrone icon
           />
         ))}
 
-        {/* Static & Random Geofences */}
-        <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
-        <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
+        {startPos && (
+          <Marker position={startPos}>
+            <Popup>Hero UAV Start</Popup>
+          </Marker>
+        )}
+        {endPos && (
+          <Marker position={endPos}>
+            <Popup>Hero UAV Destination</Popup>
+          </Marker>
+        )}
+
+        {/* <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} /> */}
+        {/* <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
         {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
-        ))}
+        ))} */}
 
-        {/* Optional Grid */}
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
             const [lat, lon] = matrixToDelhiCoords(r, c, matrixSize);
-            return (
-              <CircleMarker
-                key={`${r}-${c}`}
-                center={[lat, lon]}
-                radius={0.1}
-                color="red"
-                fillOpacity={0.0}
-              />
-            );
+            // return (
+            //   <CircleMarker
+            //     key={`${r}-${c}`}
+            //     center={[lat, lon]}
+            //     radius={0.1}
+            //     color="red"
+            //     fillOpacity={0.0}
+            //   />
+            // );
           })
         )}
       </MapContainer>

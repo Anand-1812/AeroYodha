@@ -1,29 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Controls from "./controls/Controls";
 import BasicMap from "./map/UAVMap";
 
 export default function UAVSimulation() {
   const [running, setRunning] = useState(false);
   const [uavs, setUavs] = useState([]);
-  const [uavCount, setUavCount] = useState(1);
+  const [uavCount, setUavCount] = useState(0);
+  const [noFlyZones, setNoFlyZones] = useState([]);
+  const [data, setData] = useState(null);
 
-  const generateRandomUavs = (count = 1) => {
-    const arr = Array.from({ length: count }).map((_, i) => ({
-      id: i,
-      speed: 80 + Math.random() * 50,
-      trajectory: Array.from({ length: 30 }).map((_, j) => [
-        Math.random() * 30,
-        Math.random() * 30,
-      ]),
-    }));
-    setUavs(arr);
-  };
+  // Load the JSON file (place uavdata.json in your /public directory)
+  useEffect(() => {
+    fetch("/uavdata.json")
+      .then((res) => res.json())
+      .then((json) => {
+        setData(json);
+        const snapshot = json.docs[0]; // first frame (step 0)
+        setNoFlyZones(snapshot.noFlyZones);
+        setUavs(snapshot.uavs);
+        setUavCount(snapshot.uavs.length);
+      })
+      .catch((err) => console.error("Error loading UAV data:", err));
+  }, []);
 
-  const handleAddUavs = () => generateRandomUavs(Number(uavCount));
-  const refreshData = () => generateRandomUavs(uavCount);
-  const stop = () => {
-    setRunning(false);
-    setUavs([]);
+  const handleStart = () => setRunning(true);
+  const stop = () => setRunning(false);
+
+  const refreshData = () => {
+    if (!data) return;
+    const snapshot = data.docs[0];
+    setNoFlyZones(snapshot.noFlyZones);
+    setUavs(snapshot.uavs);
   };
 
   return (
@@ -31,10 +38,10 @@ export default function UAVSimulation() {
       <div className="row g-0" style={{ height: "100%" }}>
         {/* Map Section */}
         <div className="col-12 col-lg-9" style={{ height: "100%" }}>
-          <BasicMap running={running} uavs={uavs} />
+          <BasicMap running={running} uavs={uavs} noFlyZones={noFlyZones} />
         </div>
 
-        {/* Controls Section (static, full height) */}
+        {/* Controls Section */}
         <div
           className="col-12 col-lg-3"
           style={{
@@ -51,7 +58,8 @@ export default function UAVSimulation() {
             uavs={uavs}
             uavCount={uavCount}
             setUavCount={setUavCount}
-            handleAddUavs={handleAddUavs}
+            handleAddUavs={() => {}}
+            handleStart={handleStart}
           />
         </div>
       </div>
