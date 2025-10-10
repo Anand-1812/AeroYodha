@@ -25,18 +25,12 @@ const rectangle2 = [
   [28.56, 77.2],
 ];
 
-// === Utility: Convert matrix coordinates to Delhi coordinates ===
-function matrixToDelhiCoords(row, col, matrixSize = 30) {
-  const [lat1, lon1] = rectangle1[0];
-  const [lat2, lon2] = rectangle1[1];
-
-  row = Math.max(0, Math.min(matrixSize - 1, row));
-  col = Math.max(0, Math.min(matrixSize - 1, col));
-
-  const lat = lat1 + (row / (matrixSize - 1)) * (lat2 - lat1);
-  const lon = lon1 + (col / (matrixSize - 1)) * (lon2 - lon1);
-
-  return [lat, lon];
+// === Utility: Convert matrix coordinates to city coordinates (dynamic center) ===
+function matrixToCityCoords(row, col, center = [28.6139, 77.2090], matrixSize = 30) {
+  const [baseLat, baseLon] = center;
+  const latOffset = (row - matrixSize / 2) * 0.001; // scale grid to ~3km box
+  const lonOffset = (col - matrixSize / 2) * 0.001;
+  return [baseLat + latOffset, baseLon + lonOffset];
 }
 
 // === Utility: Haversine distance in meters ===
@@ -54,11 +48,11 @@ function getDistance(lat1, lon1, lat2, lon2) {
 }
 
 // === UAV COMPONENT (smooth movement + glowing fading path) ===
-function UAV({ id, trajectory, speed, running, isHero }) {
+function UAV({ id, trajectory, speed, running, isHero, center }) {
   const [index, setIndex] = useState(0);
   const [latlng, setLatlng] = useState(() => {
     const [r, c] = trajectory[0];
-    return matrixToDelhiCoords(r, c);
+    return matrixToCityCoords(r, c, center);
   });
   const [duration, setDuration] = useState(0);
   const [pathTaken, setPathTaken] = useState([latlng]);
@@ -81,8 +75,8 @@ function UAV({ id, trajectory, speed, running, isHero }) {
 
     const [r1, c1] = trajectory[index];
     const [r2, c2] = trajectory[index + 1];
-    const [lat1, lon1] = matrixToDelhiCoords(r1, c1);
-    const [lat2, lon2] = matrixToDelhiCoords(r2, c2);
+    const [lat1, lon1] = matrixToCityCoords(r1, c1, center);
+    const [lat2, lon2] = matrixToCityCoords(r2, c2, center);
 
     const dist = getDistance(lat1, lon1, lat2, lon2);
     const time = (dist / speed) * 1000;
@@ -96,7 +90,7 @@ function UAV({ id, trajectory, speed, running, isHero }) {
     }, time);
 
     return () => clearTimeout(timer);
-  }, [index, running, trajectory, speed]);
+  }, [index, running, trajectory, speed, center]);
 
   // Fading trail segments
   const fadingSegments = pathTaken.map((_, i, arr) => {
@@ -119,7 +113,6 @@ function UAV({ id, trajectory, speed, running, isHero }) {
   return (
     <>
       {fadingSegments}
-
       <ReactLeafletDriftMarker position={latlng} duration={duration} icon={icon}>
         <Popup>
           UAV {id} <br />
@@ -132,7 +125,7 @@ function UAV({ id, trajectory, speed, running, isHero }) {
 }
 
 // === Random geofence generator ===
-function generateRandomGeofences(matrixSize, count = 3) {
+function generateRandomGeofences(center, matrixSize, count = 3) {
   const geofences = [];
   for (let i = 0; i < count; i++) {
     const r1 = Math.floor(Math.random() * matrixSize);
@@ -140,10 +133,11 @@ function generateRandomGeofences(matrixSize, count = 3) {
     const r2 = r1 + Math.floor(Math.random() * 10) + 1;
     const c2 = c1 + Math.floor(Math.random() * 10) + 1;
 
-    const [lat1, lon1] = matrixToDelhiCoords(r1, c1, matrixSize);
-    const [lat2, lon2] = matrixToDelhiCoords(
+    const [lat1, lon1] = matrixToCityCoords(r1, c1, center, matrixSize);
+    const [lat2, lon2] = matrixToCityCoords(
       Math.min(r2, matrixSize - 1),
       Math.min(c2, matrixSize - 1),
+      center,
       matrixSize
     );
 
@@ -156,7 +150,7 @@ function generateRandomGeofences(matrixSize, count = 3) {
 }
 
 // === Move map to searched city ===
-function MapMover({ city }) {
+function MapMover({ city, onCenterUpdate }) {
   const map = useMap();
 
   useEffect(() => {
@@ -170,9 +164,9 @@ function MapMover({ city }) {
         const data = await res.json();
         if (data && data.length > 0) {
           const { lat, lon } = data[0];
-          map.flyTo([parseFloat(lat), parseFloat(lon)], 12, {
-            duration: 2,
-          });
+          const newCenter = [parseFloat(lat), parseFloat(lon)];
+          map.flyTo(newCenter, 12, { duration: 2 });
+          onCenterUpdate(newCenter); // tell parent to reset drones/zones
         } else {
           alert("City not found. Try another name.");
         }
@@ -182,7 +176,7 @@ function MapMover({ city }) {
     };
 
     fetchCoords();
-  }, [city, map]);
+  }, [city, map, onCenterUpdate]);
 
   return null;
 }
@@ -192,22 +186,30 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
   const matrixSize = 30;
   const rectangleOptions = { color: "black" };
   const [geofences, setGeofences] = useState([]);
+  const [center, setCenter] = useState([28.6133825, 77.21849369]); // default Delhi
 
+  // generate fences around current center
   useEffect(() => {
-    setGeofences(generateRandomGeofences(matrixSize, 4));
-  }, []);
+    setGeofences(generateRandomGeofences(center, matrixSize, 4));
+  }, [center]);
 
-  const heroUAV = uavs.length > 0 ? uavs[0] : null;
-  const startPos = heroUAV ? matrixToDelhiCoords(...heroUAV.path[0]) : null;
+  // rebuild UAVs whenever center changes (full reset)
+  const resetUAVs = uavs.map((uav) => ({
+    ...uav,
+    path: uav.path.map(([r, c]) => [r, c]), // keep structure, new coords handled inside UAV
+  }));
+
+  const heroUAV = resetUAVs.length > 0 ? resetUAVs[0] : null;
+  const startPos = heroUAV ? matrixToCityCoords(...heroUAV.path[0], center) : null;
   const endPos =
     heroUAV && heroUAV.path.length > 1
-      ? matrixToDelhiCoords(...heroUAV.path[heroUAV.path.length - 1])
+      ? matrixToCityCoords(...heroUAV.path[heroUAV.path.length - 1], center)
       : null;
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
       <MapContainer
-        center={[28.6133825, 77.21849369]}
+        center={center}
         zoom={16}
         style={{ height: "100%", width: "100%" }}
         zoomControl={true}
@@ -218,16 +220,17 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
         />
 
         {/* City mover */}
-        <MapMover city={city} />
+        <MapMover city={city} onCenterUpdate={setCenter} />
 
-        {uavs.map((uav, idx) => (
+        {resetUAVs.map((uav, idx) => (
           <UAV
             key={uav.id}
             id={uav.id}
             trajectory={uav.path}
             speed={10 + Math.random() * 5}
             running={running}
-            isHero={idx === 0} // first UAV uses otherdrone icon
+            isHero={idx === 0}
+            center={center}
           />
         ))}
 
@@ -242,7 +245,7 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
           </Marker>
         )}
 
-        {/* <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} /> */}
+        <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
         {/* <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
         {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
@@ -250,7 +253,7 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
 
         {Array.from({ length: matrixSize }).map((_, r) =>
           Array.from({ length: matrixSize }).map((_, c) => {
-            const [lat, lon] = matrixToDelhiCoords(r, c, matrixSize);
+            const [lat, lon] = matrixToCityCoords(r, c, center, matrixSize);
             // return (
             //   <CircleMarker
             //     key={`${r}-${c}`}

@@ -8,21 +8,26 @@ export default function UAVSimulation() {
   const [uavCount, setUavCount] = useState(0);
   const [noFlyZones, setNoFlyZones] = useState([]);
   const [data, setData] = useState(null);
-  const [city, setCity] = useState(""); // <-- added for map search
+  const [city, setCity] = useState(""); // Current city or location
+  const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]); // Default center (India)
 
-  // Load the JSON file (place uavdata.json in your /public directory)
+  // Load initial UAV data
   useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = () => {
     fetch("/uavdata.json")
       .then((res) => res.json())
       .then((json) => {
         setData(json);
-        const snapshot = json.docs[0]; // first frame (step 0)
+        const snapshot = json.docs[0];
         setNoFlyZones(snapshot.noFlyZones);
         setUavs(snapshot.uavs);
         setUavCount(snapshot.uavs.length);
       })
       .catch((err) => console.error("Error loading UAV data:", err));
-  }, []);
+  };
 
   const handleStart = () => setRunning(true);
   const stop = () => setRunning(false);
@@ -34,9 +39,39 @@ export default function UAVSimulation() {
     setUavs(snapshot.uavs);
   };
 
-  // 🔍 Handle city search (from Controls input)
-  const handleLocationSearch = (cityName) => {
+  // 🔍 Handle location search + full reset
+  const handleLocationSearch = async (cityName) => {
+    if (!cityName.trim()) return;
     setCity(cityName);
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${cityName}`
+      );
+      const results = await response.json();
+
+      if (results.length > 0) {
+        const { lat, lon } = results[0];
+        const newCenter = [parseFloat(lat), parseFloat(lon)];
+        setMapCenter(newCenter);
+
+        // 🧭 Reset entire system at new location
+        setRunning(false);
+        setUavs([]);
+        setUavCount(0);
+        setNoFlyZones([]);
+        setData(null);
+
+        // Optional: Reload data to simulate a new scenario at this location
+        loadInitialData();
+
+        console.log(`✅ Map reset to ${cityName}:`, newCenter);
+      } else {
+        alert("Location not found. Try another city name.");
+      }
+    } catch (err) {
+      console.error("Error finding location:", err);
+    }
   };
 
   return (
@@ -48,7 +83,8 @@ export default function UAVSimulation() {
             running={running}
             uavs={uavs}
             noFlyZones={noFlyZones}
-            city={city} // <-- added for dynamic map movement
+            city={city}
+            mapCenter={mapCenter} // 👈 dynamically updates map
           />
         </div>
 
@@ -71,7 +107,7 @@ export default function UAVSimulation() {
             setUavCount={setUavCount}
             handleAddUavs={() => {}}
             handleStart={handleStart}
-            handleLocationSearch={handleLocationSearch} // <-- new prop for location input
+            handleLocationSearch={handleLocationSearch} // 👈 handles city input
           />
         </div>
       </div>
