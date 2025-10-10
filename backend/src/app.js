@@ -9,6 +9,7 @@ dotenv.config();
 // Routes
 import healthCheckRouter from "./routes/healthcheck.routes.js";
 import uavRouter from "./routes/uav.routes.js";
+import { StepSnapshot } from "./models/StepSnapshot.js"; // ⬅️ import your model
 
 const app = express();
 
@@ -33,13 +34,27 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("✅ MongoDB connected"))
+  .then(async () => {
+    console.log("✅ MongoDB connected");
+
+    // 🧹 TTL Index Cleanup (only runs if TTL index exists)
+    try {
+      const indexes = await StepSnapshot.collection.indexes();
+      const ttlIndex = indexes.find((i) => i.expireAfterSeconds);
+      if (ttlIndex) {
+        await StepSnapshot.collection.dropIndex(ttlIndex.name);
+        console.log(`🧹 Dropped TTL index: ${ttlIndex.name}`);
+      } else {
+        console.log("✅ No TTL index found on StepSnapshot");
+      }
+    } catch (err) {
+      console.error("⚠️ TTL index cleanup error:", err.message);
+    }
+  })
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Routes
-// Health check
 app.use("/api/v1/healthcheck", healthCheckRouter);
-// This route will receive demo-like grid data (rows=12, cols=8)
 app.use("/api/v1/uavs", uavRouter);
 
 // Root
@@ -52,4 +67,3 @@ app.use((req, res) => {
 });
 
 export default app;
-
