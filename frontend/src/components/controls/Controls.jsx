@@ -1,16 +1,23 @@
-import React from "react";
-import logo from "../../assets/Logo.png"
+import React, { useState } from "react";
+import logo from "../../assets/Logo.png";
 
 const Controls = ({
   running,
   setRunning,
   stop,
-  refreshData,
   uavs,
-  uavCount,
-  setUavCount,
   handleAddUavs,
+  handleLocationSearch, // <-- optional callback for map integration
 }) => {
+  const [location, setLocation] = useState("");
+
+  const handleSearch = () => {
+    if (handleLocationSearch && location.trim() !== "") {
+      handleLocationSearch(location.trim());
+      setLocation("");
+    }
+  };
+
   return (
     <div
       style={{
@@ -25,8 +32,7 @@ const Controls = ({
       {/* Title */}
       <div className="row">
         <div className="col d-flex justify-content-center">
-          {/* <h2>AeroYodha</h2> */}
-          <img src={logo} alt="Logo" style={{height:100 , width:300}}></img>
+          <img src={logo} alt="Logo" style={{ height: 100, width: 300 }} />
         </div>
 
         {/* Start / Stop buttons */}
@@ -43,32 +49,38 @@ const Controls = ({
         </div>
       </div>
 
-      {/* Refresh */}
-      <button className="btn-generic rounded-pill" onClick={refreshData}>
-        Refresh from API
-      </button>
-
-      {/* UAV Count Control */}
-      <div style={{ marginTop: "10px" }}>
-        <div className="input-group mb-3" style={{ width: "120px" }}>
-          <span className="input-group-text bg-dark text-white border-dark" id="uav-count-addon">
-            UAVs:
-          </span>
-          <input
-            type="number"
-            className="form-control bg-dark text-white border-dark"
-            value={uavCount}
-            onChange={(e) => setUavCount(e.target.value)}
-            min="1"
-            max="8"
-            aria-label="Number of UAVs"
-            aria-describedby="uav-count-addon"
-          />
-        </div>
-        <button onClick={handleAddUavs} className="btn-generic rounded-pill">
-          Generate UAVs
+      {/* Location Input */}
+      <div
+        className="d-flex justify-content-center align-items-center mt-3"
+        style={{ gap: 10 }}
+      >
+        <input
+          type="text"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Enter location..."
+          className="form-control rounded-pill px-3"
+          style={{
+            width: "250px",
+            backgroundColor: "#f8f9fa",
+            border: "1px solid #ccc",
+          }}
+        />
+        <button
+          className="btn btn-primary rounded-pill px-4"
+          onClick={handleSearch}
+        >
+          Go
         </button>
       </div>
+
+      {/* Refresh */}
+      <button
+        className="btn-generic rounded-pill mt-2"
+        onClick={() => window.location.reload()}
+      >
+        Refresh Site
+      </button>
 
       {/* Status */}
       <div className="text-white opacity-75" style={{ marginLeft: "auto" }}>
