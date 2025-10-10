@@ -1,5 +1,5 @@
-import React from "react";
-import logo from "../../assets/Logo.png"
+import React, { useState } from "react";
+import logo from "../../assets/Logo.png";
 
 const Controls = ({
   running,
@@ -7,7 +7,17 @@ const Controls = ({
   stop,
   uavs,
   handleAddUavs,
+  handleLocationSearch, // <-- optional callback for map integration
 }) => {
+  const [location, setLocation] = useState("");
+
+  const handleSearch = () => {
+    if (handleLocationSearch && location.trim() !== "") {
+      handleLocationSearch(location.trim());
+      setLocation("");
+    }
+  };
+
   return (
     <div
       style={{
@@ -37,6 +47,31 @@ const Controls = ({
             Stop
           </button>
         </div>
+      </div>
+
+      {/* Location Input */}
+      <div
+        className="d-flex justify-content-center align-items-center mt-3"
+        style={{ gap: 10 }}
+      >
+        <input
+          type="text"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Enter location..."
+          className="form-control rounded-pill px-3"
+          style={{
+            width: "250px",
+            backgroundColor: "#f8f9fa",
+            border: "1px solid #ccc",
+          }}
+        />
+        <button
+          className="btn btn-primary rounded-pill px-4"
+          onClick={handleSearch}
+        >
+          Go
+        </button>
       </div>
 
       {/* Refresh */}
