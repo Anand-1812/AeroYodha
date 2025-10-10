@@ -4,7 +4,6 @@ import {
   TileLayer,
   Popup,
   Rectangle,
-  CircleMarker,
   Marker,
   Polyline,
   useMap,
@@ -12,7 +11,7 @@ import {
 import L from "leaflet";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
 import herodrone from "../../assets/hero-drone.png";
-import otherdrone from "../../assets/hero-drone-red.png"; // <-- New marker for first drone
+import otherdrone from "../../assets/hero-drone-red.png"; // Hero UAV marker
 
 // === Rectangle bounds ===
 const rectangle1 = [
@@ -20,20 +19,15 @@ const rectangle1 = [
   [28.6078898, 77.2267138],
 ];
 
-const rectangle2 = [
-  [28.52, 77.16],
-  [28.56, 77.2],
-];
-
-// === Utility: Convert matrix coordinates to city coordinates (dynamic center) ===
+// === Utility: Convert matrix coordinates to city coordinates ===
 function matrixToCityCoords(row, col, center = [28.6139, 77.2090], matrixSize = 30) {
   const [baseLat, baseLon] = center;
-  const latOffset = (row - matrixSize / 2) * 0.001; // scale grid to ~3km box
+  const latOffset = (row - matrixSize / 2) * 0.001; // scale grid to ~3km
   const lonOffset = (col - matrixSize / 2) * 0.001;
   return [baseLat + latOffset, baseLon + lonOffset];
 }
 
-// === Utility: Haversine distance in meters ===
+// === Haversine distance in meters ===
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371e3;
   const φ1 = (lat1 * Math.PI) / 180;
@@ -47,7 +41,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// === UAV COMPONENT (smooth movement + glowing fading path) ===
+// === UAV COMPONENT ===
 function UAV({ id, trajectory, speed, running, isHero, center }) {
   const [index, setIndex] = useState(0);
   const [latlng, setLatlng] = useState(() => {
@@ -57,11 +51,9 @@ function UAV({ id, trajectory, speed, running, isHero, center }) {
   const [duration, setDuration] = useState(0);
   const [pathTaken, setPathTaken] = useState([latlng]);
 
-  // Different color for each UAV trail
-  const colors = ["#ff4d00ff", "#ff4d00ff", "#ffb300ff", "#80ff00ff", "#3700ffff"];
+  const colors = ["#ff4d00ff", "#ffb300ff", "#80ff00ff", "#3700ffff"];
   const color = colors[id % colors.length];
 
-  // Icon: hero UAV gets a different marker
   const icon = new L.Icon({
     iconUrl: isHero ? otherdrone : herodrone,
     iconSize: [40, 40],
@@ -92,7 +84,6 @@ function UAV({ id, trajectory, speed, running, isHero, center }) {
     return () => clearTimeout(timer);
   }, [index, running, trajectory, speed, center]);
 
-  // Fading trail segments
   const fadingSegments = pathTaken.map((_, i, arr) => {
     if (i === arr.length - 1) return null;
     const opacity = (i + 1) / arr.length;
@@ -100,12 +91,7 @@ function UAV({ id, trajectory, speed, running, isHero, center }) {
       <Polyline
         key={i}
         positions={[arr[i], arr[i + 1]]}
-        pathOptions={{
-          color,
-          weight: 4,
-          opacity,
-          smoothFactor: 1,
-        }}
+        pathOptions={{ color, weight: 4, opacity, smoothFactor: 1 }}
       />
     );
   });
@@ -165,8 +151,8 @@ function MapMover({ city, onCenterUpdate }) {
         if (data && data.length > 0) {
           const { lat, lon } = data[0];
           const newCenter = [parseFloat(lat), parseFloat(lon)];
-          map.flyTo(newCenter, 12, { duration: 2 });
-          onCenterUpdate(newCenter); // tell parent to reset drones/zones
+          map.flyTo(newCenter, 16, { duration: 2 });
+          onCenterUpdate(newCenter); // resets UAVs & geofences
         } else {
           alert("City not found. Try another name.");
         }
@@ -196,7 +182,7 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
   // rebuild UAVs whenever center changes (full reset)
   const resetUAVs = uavs.map((uav) => ({
     ...uav,
-    path: uav.path.map(([r, c]) => [r, c]), // keep structure, new coords handled inside UAV
+    path: uav.path.map(([r, c]) => [r, c]),
   }));
 
   const heroUAV = resetUAVs.length > 0 ? resetUAVs[0] : null;
@@ -208,23 +194,17 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
 
   return (
     <div style={{ height: "100vh", width: "100%" }}>
-      <MapContainer
-        center={center}
-        zoom={16}
-        style={{ height: "100%", width: "100%" }}
-        zoomControl={true}
-      >
+      <MapContainer center={center} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={true}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
 
-        {/* City mover */}
         <MapMover city={city} onCenterUpdate={setCenter} />
 
         {resetUAVs.map((uav, idx) => (
           <UAV
-            key={uav.id}
+            key={`${uav.id}-${center[0]}-${center[1]}`} // <--- re-render on new city
             id={uav.id}
             trajectory={uav.path}
             speed={10 + Math.random() * 5}
@@ -245,26 +225,12 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
           </Marker>
         )}
 
-        <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} />
-        {/* <Rectangle bounds={rectangle2} pathOptions={rectangleOptions} />
-        {geofences.map((bounds, idx) => (
+        {/* <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} /> */}
+
+        {/* Optional geofence rectangles */}
+        {/* {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
         ))} */}
-
-        {Array.from({ length: matrixSize }).map((_, r) =>
-          Array.from({ length: matrixSize }).map((_, c) => {
-            const [lat, lon] = matrixToCityCoords(r, c, center, matrixSize);
-            // return (
-            //   <CircleMarker
-            //     key={`${r}-${c}`}
-            //     center={[lat, lon]}
-            //     radius={0.1}
-            //     color="red"
-            //     fillOpacity={0.0}
-            //   />
-            // );
-          })
-        )}
       </MapContainer>
     </div>
   );
