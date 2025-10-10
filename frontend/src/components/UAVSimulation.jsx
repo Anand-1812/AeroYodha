@@ -8,6 +8,7 @@ export default function UAVSimulation() {
   const [uavCount, setUavCount] = useState(0);
   const [noFlyZones, setNoFlyZones] = useState([]);
   const [data, setData] = useState(null);
+  const [city, setCity] = useState(""); // <-- added for map search
 
   // Load the JSON file (place uavdata.json in your /public directory)
   useEffect(() => {
@@ -33,12 +34,22 @@ export default function UAVSimulation() {
     setUavs(snapshot.uavs);
   };
 
+  // 🔍 Handle city search (from Controls input)
+  const handleLocationSearch = (cityName) => {
+    setCity(cityName);
+  };
+
   return (
     <div className="container-fluid p-0" style={{ height: "100vh" }}>
       <div className="row g-0" style={{ height: "100%" }}>
         {/* Map Section */}
         <div className="col-12 col-lg-9" style={{ height: "100%" }}>
-          <BasicMap running={running} uavs={uavs} noFlyZones={noFlyZones} />
+          <BasicMap
+            running={running}
+            uavs={uavs}
+            noFlyZones={noFlyZones}
+            city={city} // <-- added for dynamic map movement
+          />
         </div>
 
         {/* Controls Section */}
@@ -60,6 +71,7 @@ export default function UAVSimulation() {
             setUavCount={setUavCount}
             handleAddUavs={() => {}}
             handleStart={handleStart}
+            handleLocationSearch={handleLocationSearch} // <-- new prop for location input
           />
         </div>
       </div>

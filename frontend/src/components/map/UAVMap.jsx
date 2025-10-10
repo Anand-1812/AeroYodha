@@ -7,6 +7,7 @@ import {
   CircleMarker,
   Marker,
   Polyline,
+  useMap,
 } from "react-leaflet";
 import L from "leaflet";
 import ReactLeafletDriftMarker from "react-leaflet-drift-marker";
@@ -154,8 +155,40 @@ function generateRandomGeofences(matrixSize, count = 3) {
   return geofences;
 }
 
+// === Move map to searched city ===
+function MapMover({ city }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!city) return;
+
+    const fetchCoords = async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`
+        );
+        const data = await res.json();
+        if (data && data.length > 0) {
+          const { lat, lon } = data[0];
+          map.flyTo([parseFloat(lat), parseFloat(lon)], 12, {
+            duration: 2,
+          });
+        } else {
+          alert("City not found. Try another name.");
+        }
+      } catch (err) {
+        console.error("Geocoding error:", err);
+      }
+    };
+
+    fetchCoords();
+  }, [city, map]);
+
+  return null;
+}
+
 // === MAIN MAP ===
-export default function BasicMap({ running, uavs, noFlyZones = [] }) {
+export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
   const matrixSize = 30;
   const rectangleOptions = { color: "black" };
   const [geofences, setGeofences] = useState([]);
@@ -183,6 +216,9 @@ export default function BasicMap({ running, uavs, noFlyZones = [] }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
         />
+
+        {/* City mover */}
+        <MapMover city={city} />
 
         {uavs.map((uav, idx) => (
           <UAV
