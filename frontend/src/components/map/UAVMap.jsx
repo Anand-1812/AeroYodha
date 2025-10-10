@@ -192,9 +192,38 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
       ? matrixToCityCoords(...heroUAV.path[heroUAV.path.length - 1], center)
       : null;
 
+  // 🟥 Convert no-fly zones (from data) into map rectangles
+  const noFlyZoneRects = noFlyZones.map(([r, c], idx) => {
+    const [lat1, lon1] = matrixToCityCoords(r, c, center, matrixSize);
+    const [lat2, lon2] = matrixToCityCoords(r + 1, c + 1, center, matrixSize);
+    return (
+      <Rectangle
+        key={`nfz-${idx}`}
+        bounds={[
+          [lat1, lon1],
+          [lat2, lon2],
+        ]}
+        pathOptions={{
+          color: "red",
+          weight: 2,
+          fillColor: "red",
+          fillOpacity: 0.3,
+          dashArray: "4 4",
+        }}
+      >
+        <Popup>No-Fly Zone #{idx + 1}</Popup>
+      </Rectangle>
+    );
+  });
+
   return (
     <div style={{ height: "100vh", width: "100%" }}>
-      <MapContainer center={center} zoom={14} style={{ height: "100%", width: "100%" }} zoomControl={true}>
+      <MapContainer
+        center={center}
+        zoom={15}
+        style={{ height: "100%", width: "100%" }}
+        zoomControl={true}
+      >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution="&copy; OpenStreetMap contributors"
@@ -202,9 +231,10 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
 
         <MapMover city={city} onCenterUpdate={setCenter} />
 
+        {/* === UAVs === */}
         {resetUAVs.map((uav, idx) => (
           <UAV
-            key={`${uav.id}-${center[0]}-${center[1]}`} // <--- re-render on new city
+            key={`${uav.id}-${center[0]}-${center[1]}`}
             id={uav.id}
             trajectory={uav.path}
             speed={10 + Math.random() * 5}
@@ -214,6 +244,7 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
           />
         ))}
 
+        {/* === Hero UAV start/destination === */}
         {startPos && (
           <Marker position={startPos}>
             <Popup>Hero UAV Start</Popup>
@@ -227,10 +258,13 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
 
         {/* <Rectangle bounds={rectangle1} pathOptions={rectangleOptions} /> */}
 
-        {/* Optional geofence rectangles */}
+        {/* === Random demo geofences === */}
         {/* {geofences.map((bounds, idx) => (
           <Rectangle key={idx} bounds={bounds} pathOptions={{ color: "red" }} />
         ))} */}
+
+        {/* 🟥 Actual No-Fly Zones from data */}
+        {noFlyZoneRects}
       </MapContainer>
     </div>
   );
