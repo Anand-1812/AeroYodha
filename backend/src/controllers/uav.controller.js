@@ -58,7 +58,9 @@ export const getSteps = async (req, res) => {
 
     const total = await StepSnapshot.countDocuments();
 
-    return res.json({ ok: true, total, page, limit, docs });
+    return res
+    .setHeader('Access-Control-Allow-Origin','http://localhost:5173')
+    .json({ ok: true, total, page, limit, docs });
   } catch (err) {
     console.error("getSteps error:", err);
     return res.status(500).json({ ok: false, message: "Internal server error" });

@@ -6,12 +6,8 @@ export default function Splash({ onFinish }) {
   const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
-    // Start fade-out slightly before the total duration
-    const fadeTimer = setTimeout(() => setFadeOut(true), 2200); // start fade at 1.2s
-
-    // Finish splash after 1.5 seconds
-    const finishTimer = setTimeout(() => onFinish(), 2500);
-
+    const fadeTimer = setTimeout(() => setFadeOut(true), 2000);
+    const finishTimer = setTimeout(() => onFinish(), 2000);
     return () => {
       clearTimeout(fadeTimer);
       clearTimeout(finishTimer);
@@ -20,8 +16,12 @@ export default function Splash({ onFinish }) {
 
   return (
     <div className={`splash-container ${fadeOut ? "fade-out" : ""}`}>
-      <img src={logo} alt="Logo" className="splash-logo" />
-      <h1 className="splash-text">Welcome to UAV Simulation</h1>
+      <img src={logo} style={{height:200, width:550}}alt="Logo" className="splash-logo" />
+      <h1 className="splash-text">Welcome to UTM Simulation</h1>
+
+      <div className="splash-footer">
+        Made with <span className="heart">❤</span> by <strong>Biplob</strong>, <strong>Anand</strong>, and <strong>Dev</strong>
+      </div>
     </div>
   );
 }
