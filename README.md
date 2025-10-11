@@ -21,22 +21,22 @@ A full-stack *UAV (Drone) simulation system* that models UAV movement on a real 
 
 ## ⚡ Tech Stack
 
-*Backend*  
+**Backend**  
 - [Node.js](https://nodejs.org/) – JavaScript runtime  
 - [Express.js](https://expressjs.com/) – Web framework  
 - [Mongoose](https://mongoosejs.com/) – MongoDB object modeling  
 
-*Frontend*  
+**Frontend**  
 - [React](https://reactjs.org/) – UI library  
 - [TailwindCSS](https://tailwindcss.com/) – Styling framework  
 
-*Simulation*  
+**Simulation**  
 - [Python 3](https://www.python.org/) – Simulation scripts  
 - [NumPy](https://numpy.org/) – Numerical computations  
 - [Matplotlib](https://matplotlib.org/) – Visualization  
 - [NetworkX](https://networkx.org/) – Graph & path planning  
 
-*Database & Cloud Services*  
+**Database & Cloud Services**  
 - [MongoDB Atlas](https://www.mongodb.com/atlas) – Cloud database  
 
 ---
@@ -85,23 +85,24 @@ UAV_Simulation/
 └── README.md
 
 
----
-
 ## ⚙️ Installation & Setup
 
-Follow these steps to run the project locally:
-
-1. **Clone the repository**
+**1. Clone the repository**
 ```bash
 git clone https://github.com/your-username/uav-simulation.git
 cd uav-simulation
 
-    Setup Backend
+**1. Clone the repository**
+```bash
+git clone https://github.com/your-username/uav-simulation.git
+cd uav-simulation
+
+2. Setup Backend
 
 cd backend
 npm install
 
-    Create a .env file in backend/ (use .env.example as template)
+3. Create a .env file in backend/ (use .env.example as template)
 
 # MongoDB Atlas
 MONGO_URI=your_mongodb_connection_string
@@ -109,11 +110,11 @@ MONGO_URI=your_mongodb_connection_string
 # Express server port
 PORT=5000
 
-    Run the backend server
+4. Run the backend server
 
 npm start
 
-    Setup Python Simulation
+5. Setup Python Simulation
 
 cd UAV_Traffic
 python3 -m venv venv      # optional if not already created
@@ -121,7 +122,7 @@ source venv/bin/activate
 pip install -r ../requirements.txt
 python scripts/demo.py
 
-    Run Frontend
+6. Run Frontend
 
 cd frontend
 npm install
@@ -150,10 +151,3 @@ This project is licensed under the MIT License – free to use, modify, and dist
 💡 Developer
 
 Made with ❤️ by Anand
-
-
----
-
-If you want, I can **also add the `.env.example` instructions visually in the README**, plus **a small ASCII “architecture diagram” using arrows and boxes** that looks nice on GitHub.  
-
-Do you want me to do that next?
