@@ -2,34 +2,6 @@
 import { StepSnapshot } from "../models/uav.model.js";
 
 /**
- * POST /api/simulation/step
- * Body: { step: number, uavs: [...], noFlyZones: [...], meta?: {...} }
- * Save a new step snapshot (replaces previous step)
- */
-export const createStep = async (req, res) => {
-  try {
-    const { step, uavs = [], noFlyZones = [], meta = {} } = req.body;
-
-    if (typeof step !== "number") {
-      return res.status(400).json({ ok: false, message: "Missing or invalid 'step' (number)" });
-    }
-
-    // Replace previous step with fixed _id
-    const stepDoc = { step, uavs, noFlyZones, meta, _id: "latest_step" };
-    await StepSnapshot.replaceOne(
-      { _id: "latest_step" }, // find the document with this ID
-      stepDoc,                // new data
-      { upsert: true }        // insert if doesn't exist
-    );
-
-    return res.status(201).json({ ok: true, doc: stepDoc });
-  } catch (err) {
-    console.error("createStep error:", err);
-    return res.status(500).json({ ok: false, message: "Internal server error" });
-  }
-};
-
-/**
  * GET /api/simulation/latest
  * Returns the most recent step
  */
