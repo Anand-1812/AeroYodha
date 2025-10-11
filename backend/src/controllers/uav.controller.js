@@ -2,13 +2,36 @@
 import { StepSnapshot } from "../models/uav.model.js";
 
 /**
+ * POST /api/simulation/step
+ * Body: { step: number, uavs: [...], noFlyZones: [...], meta?: {...} }
+ * Save a new step snapshot
+ */
+export const createStep = async (req, res) => {
+  try {
+    const { step, uavs = [], noFlyZones = [], meta = {} } = req.body;
+
+    if (typeof step !== "number") {
+      return res.status(400).json({ ok: false, message: "Missing or invalid 'step' (number)" });
+    }
+
+    const doc = new StepSnapshot({ step, uavs, noFlyZones, meta });
+    await doc.save();
+
+    return res.status(201).json({ ok: true, doc });
+  } catch (err) {
+    console.error("createStep error:", err);
+    return res.status(500).json({ ok: false, message: "Internal server error" });
+  }
+};
+
+/**
  * GET /api/simulation/latest
- * Returns the most recent step
+ * Returns the most recent step (by createdAt). Useful for frontend polling.
  */
 export const getLatestStep = async (req, res) => {
   try {
-    const latest = await StepSnapshot.findOne({ _id: "latest_step" }).lean().exec();
-    if (!latest) return res.status(404).json({ ok: false, message: "No snapshot found" });
+    const latest = await StepSnapshot.findOne().sort({ createdAt: -1 }).lean().exec();
+    if (!latest) return res.status(404).json({ ok: false, message: "No snapshots found" });
     return res.json({ ok: true, latest });
   } catch (err) {
     console.error("getLatestStep error:", err);
@@ -19,7 +42,6 @@ export const getLatestStep = async (req, res) => {
 /**
  * GET /api/simulation/steps?limit=50&page=1
  * Paged history for UI replay
- * Note: If you only keep latest step, this will just return one document
  */
 export const getSteps = async (req, res) => {
   try {
@@ -44,8 +66,9 @@ export const getSteps = async (req, res) => {
 };
 
 /**
- * SSE endpoint to stream snapshots live to frontend
+ * Optional: SSE endpoint to stream snapshots live to frontend.
  * GET /api/simulation/stream
+ * Note: keep simple — production-ready needs reconnect/heartbeat handling
  */
 export const streamStepsSSE = async (req, res) => {
   // set headers for SSE
@@ -56,16 +79,16 @@ export const streamStepsSSE = async (req, res) => {
   });
   res.flushHeaders();
 
-  // ping every 15s to keep connection alive
+  // send a ping every 15s to keep connection alive
   const ping = setInterval(() => {
     res.write(`: ping\n\n`);
   }, 15000);
 
-  // poll DB every 500ms for latest step
+  // Simple approach: poll DB every 500ms for new doc (small scale)
   let lastId = null;
   const poll = setInterval(async () => {
     try {
-      const latest = await StepSnapshot.findOne({ _id: "latest_step" }).lean().exec();
+      const latest = await StepSnapshot.findOne().sort({ createdAt: -1 }).lean().exec();
       if (!latest) return;
       const latestId = String(latest._id);
       if (latestId !== lastId) {
@@ -74,14 +97,16 @@ export const streamStepsSSE = async (req, res) => {
         res.write(`data: ${JSON.stringify(latest)}\n\n`);
       }
     } catch (err) {
+      // ignore transient errors
       console.error("SSE poll error:", err);
     }
   }, 500);
 
-  // cleanup on client disconnect
+  // clean up on client disconnect
   req.on("close", () => {
     clearInterval(poll);
     clearInterval(ping);
     res.end();
   });
 };
+
