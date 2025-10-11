@@ -14,16 +14,15 @@ The system consists of:
 3. **Frontend Dashboard (React)** — Visualizes UAV position, path, and live telemetry.
 
 ---
-
 ## 🧩 Architecture
 
-demo.py ─▶ simulate_uav.py ─▶ path_planning.py
-│
-▼
-backend_connector.py ─▶ Express Server ─▶ MongoDB
-│
-▼
-Frontend (React)
+**Simulation Flow:**
+
+`demo.py` → `simulate_uav.py` → `path_planning.py` → `backend_connector.py`
+
+**Data Pipeline:**
+
+`Python Simulation` → `Express Server (Node.js)` → `MongoDB` → `React Frontend`
 
 
 ---
