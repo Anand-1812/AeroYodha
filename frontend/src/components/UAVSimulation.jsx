@@ -22,12 +22,12 @@ export default function UAVSimulation() {
       if (!res.ok) throw new Error("Failed to fetch UAV data");
       const json = await res.json();
 
-      console.log("✅ Full API response:", json); // log full response
+      console.log("✅ Full API response:", json.docs[0]); // log full response
 
       setData(json);
 
       // Assuming the API returns a structure similar to your old JSON
-      const snapshot = json.docs[0].docs[0];
+      const snapshot = json.docs[0];
 
       console.log("🟢 Snapshot ------>", snapshot);
       console.log("📌 UAVs:", snapshot.uavs || []);

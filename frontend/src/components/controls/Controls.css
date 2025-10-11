@@ -1,0 +1,231 @@
+/* =========================
+   Main container
+========================= */
+.controls-container {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  height: 100%;
+  position: relative;
+  color: #fff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+}
+
+/* =========================
+   Logo
+========================= */
+.controls-logo {
+  width: 280px;
+  height: auto;
+  margin-bottom: 20px;
+  object-fit: contain;
+}
+
+/* =========================
+   Search input
+========================= */
+.controls-search {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  width: 100%;
+  background: rgba(196, 29, 29, 0.6); /* dark semi-transparent background */
+  padding: 8px 12px;
+  border-radius: 30px;
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),  /* outer shadow */
+    0 0 8px rgba(255, 255, 255, 0.05) inset; /* subtle inner glow */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: transform 0.2s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.controls-search:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(255, 255, 255, 0.08) inset;
+}
+
+.controls-input {
+  flex: 1;
+  outline: none;
+  border-width: 1px;
+  border-style: solid;
+  padding: 10px 18px;
+  border-radius: 25px;
+  font-size: 14px;
+  border-color: #2f2f2f;
+  background: rgba(20, 20, 20, 0.8);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;}
+
+.controls-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+  opacity: 1;
+}
+
+.controls-input:focus {
+  background: rgba(10, 10, 10, 0.75); /* slightly darker black */
+  transform: scale(1.03); /* subtle zoom */
+  border-width: 1;
+  outline: none;
+  box-shadow: 
+    0 0 20px rgba(60, 60, 60, 0.477),  /* outer glow */
+    0 0 10px rgba(255, 255, 255, 0.037) inset, /* inner soft glow */
+    0 6px 18px rgba(0, 0, 0, 0.6);  /* shadow for depth */
+}
+/* =========================
+   Buttons
+========================= */
+.controls-btn {
+  padding: 10px 22px;
+  border-radius: 30px;
+  border: 0px solid rgba(188, 188, 188, 0.507); /* subtle glass border */
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(30, 30, 30, 0.4); /* semi-transparent glass effect */
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.6),  /* soft outer shadow */
+    0 0 12px rgba(255, 255, 255, 0.08) inset; /* subtle inner glow */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.controls-btn:hover {
+  transform: translateY(-1px) scale(1.005); /* lift & slight zoom */
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.7),   /* stronger outer shadow */
+    0 0 18px rgba(255, 255, 255, 0.12) inset; /* brighter inner glow */
+}
+
+/* Colored variants with neon/glass style */
+.controls-btn.go {
+  background: rgb(0, 123, 255);
+  box-shadow: 
+    0 4px 12px rgba(0, 123, 255, 0.6), 
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+}
+
+.controls-btn.refresh {
+  background: rgba(108, 117, 125, 0.6);
+  margin-top: 12px;
+  box-shadow: 
+    0 4px 12px rgba(108, 117, 125, 0.6), 
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+}
+
+.controls-btn.start {
+  background: rgba(40, 167, 69, 0.6);
+  box-shadow: 
+    0 4px 12px rgba(40, 167, 69, 0.6), 
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+}
+
+.controls-btn.pause {
+  background: rgba(255, 193, 7, 0.6);
+  box-shadow: 
+    0 4px 12px rgba(255, 193, 7, 0.6), 
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+}
+
+.controls-btn.stop {
+  background: rgba(220, 53, 69, 0.6);
+  box-shadow: 
+    0 4px 12px rgba(220, 53, 69, 0.6), 
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+}
+
+/* =========================
+   Bottom buttons
+========================= */
+.controls-buttons-bottom {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+}
+
+/* =========================
+   UAV Dashboard / Grid Layout
+========================= */
+.uav-dashboard {
+  margin-top: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  max-height: 250px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 8px;
+}
+
+.dashboard-header,
+.dashboard-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 3fr;
+  padding: 6px 10px;
+  align-items: center;
+}
+
+.dashboard-header {
+  font-weight: bold;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dashboard-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dashboard-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* =========================
+   Upperbox / Shadow panels
+========================= */
+.upperbox {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 40px;
+  margin-top: 20px;
+  height: 70px;
+  border-color: #2f2f2f;
+  background: rgba(20, 20, 20, 0.8);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.upperbox:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(255, 255, 255, 0.08) inset;
+}
+
+/* =========================
+

@@ -206,9 +206,9 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
         ))}
 
         {/* ✅ Matrix grid dots */}
-        {gridPoints.map((pos, idx) => (
+        {/* {gridPoints.map((pos, idx) => (
           <Marker key={idx} position={pos} icon={dotIcon} />
-        ))}
+        ))} */}
       </MapContainer>
     </div>
   );

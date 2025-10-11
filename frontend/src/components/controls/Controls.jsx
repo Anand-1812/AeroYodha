@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import logo from "../../assets/Logo.png";
+import "./Controls.css";
 
 const Controls = ({
   running,
@@ -35,44 +36,40 @@ const Controls = ({
           <img src={logo} alt="Logo" style={{ height: 100, width: 300 }} />
         </div>
 
-        {/* Start / Stop buttons */}
-        <div className="col d-flex justify-content-center mt-3">
+        <div
+          className="d-flex justify-content-center align-items-center mt-3"
+          style={{ gap: 10 }}
+        >
+          <input
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Enter state or city"
+            className="controls-input"
+          />
           <button
-            className="str-btn rounded-pill"
-            onClick={() => setRunning((r) => !r)}
+            className="btn btn-primary rounded-pill controls-btn go px-4 py-2"
+            onClick={handleSearch}
           >
-            {running ? "Pause" : "Start"}
+            Go
           </button>
-          <button className="end-btn rounded-pill ms-5" onClick={stop}>
-            Stop
-          </button>
+        </div>
+        <div className="upperbox">
+          <div className="col d-flex justify-content-center mt-3 pb-2">
+            <button
+              className="str-btn rounded-pill"
+              onClick={() => setRunning((r) => !r)}
+            >
+              {running ? "Pause" : "Start"}
+            </button>
+            <button className="end-btn rounded-pill ms-5" onClick={stop}>
+              Stop
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Location Input */}
-      <div
-        className="d-flex justify-content-center align-items-center mt-3"
-        style={{ gap: 10 }}
-      >
-        <input
-          type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          placeholder="Enter location..."
-          className="form-control rounded-pill px-3"
-          style={{
-            width: "250px",
-            backgroundColor: "#f8f9fa",
-            border: "1px solid #ccc",
-          }}
-        />
-        <button
-          className="btn btn-primary rounded-pill px-4"
-          onClick={handleSearch}
-        >
-          Go
-        </button>
-      </div>
 
       {/* Refresh */}
       <button
