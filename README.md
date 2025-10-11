@@ -117,7 +117,7 @@ PORT=5000
 **4. Run the backend server**
 
 ```bash
-npm start
+npm run dev
 ```
 
 **5. Setup Python Simulation**
