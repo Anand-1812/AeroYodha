@@ -321,7 +321,7 @@ def merged_simulation(num_uavs=7, dt=0.25, sim_time=60, planner_algo="astar", se
         ]
         sim_snapshots.append(snapshot)
 
-        Send each step to backend
+        #Send each step to backend
         send_data_to_backend(uavs, step, nofly_nodes)
 
         # Visualization
