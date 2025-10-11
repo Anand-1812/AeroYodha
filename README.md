@@ -14,12 +14,6 @@ A full-stack *UAV (Drone) simulation system* that models UAV movement on a real 
 
 ---
 
-## 🚀 Live Demo
-
-🌐 *Hosted Link*: [UAV Simulation](https://your-deployed-link.com)
-
----
-
 ## ⚡ Tech Stack
 
 **Backend**
@@ -31,7 +25,8 @@ A full-stack *UAV (Drone) simulation system* that models UAV movement on a real 
 **Frontend**
 
 * React – UI library
-* TailwindCSS – Styling framework
+* BootStrap – Styling framework
+* leafletJs - for real time map visualization
 
 **Simulation**
 
@@ -128,10 +123,10 @@ npm start
 **5. Setup Python Simulation**
 
 ```bash
-cd UAV_Traffic
 python3 -m venv venv      # optional if not already created
 source venv/bin/activate
 pip install -r ../requirements.txt
+cd UAV_Traffic
 python scripts/demo.py
 ```
 
@@ -168,8 +163,3 @@ Feel free to fork this repo and submit a pull request.
 
 This project is licensed under the *MIT License* – free to use, modify, and distribute.
 
----
-
-### 💡 Developer
-
-Made with ❤️ by [Anand](https://github.com/anand-18)
