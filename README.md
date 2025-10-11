@@ -146,8 +146,6 @@ Open your browser at: `http://localhost:5173`
 
 * ✅ 3D visualization of UAV flight
 * ✅ Real GPS coordinates integration
-* ✅ Multi-UAV support
-* ✅ Collision detection and dynamic no-fly zones
 * ✅ Historical mission storage and replay
 
 ---
