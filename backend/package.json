@@ -4,7 +4,7 @@
   "description": "AeroYodha backend written in javascript",
   "license": "ISC",
   "author": "Anand",
-  "type": "modules",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
