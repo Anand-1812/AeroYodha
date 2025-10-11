@@ -11,6 +11,15 @@ export default function UAVSimulation() {
   const [city, setCity] = useState(""); // Current city or location
   const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]); // Default center (India)
 
+  // ✅ Utility to filter UAV paths that collide with no-fly zones
+  const filterUavPaths = (uavs, noFlyZones) => {
+    const nfSet = new Set(noFlyZones.map(([r, c]) => `${r},${c}`));
+    return uavs.map((uav) => ({
+      ...uav,
+      path: uav.path.filter(([r, c]) => !nfSet.has(`${r},${c}`)),
+    }));
+  };
+
   // Load initial UAV data from API
   useEffect(() => {
     loadInitialData();
@@ -22,27 +31,26 @@ export default function UAVSimulation() {
       if (!res.ok) throw new Error("Failed to fetch UAV data");
       const json = await res.json();
 
-      console.log("✅ Full API response:", json.docs[0]); // log full response
+      console.log("✅ Full API response:", json.docs[0]);
 
       setData(json);
-
-      // Assuming the API returns a structure similar to your old JSON
       const snapshot = json.docs[0];
 
       console.log("🟢 Snapshot ------>", snapshot);
       console.log("📌 UAVs:", snapshot.uavs || []);
       console.log("🚫 No-Fly Zones:", snapshot.noFlyZones || []);
 
-      // Optional: log UAV paths as lat/lon for clarity
-      if (snapshot.uavs) {
-        snapshot.uavs.forEach((uav, idx) => {
-          console.log(`✈️ UAV ${uav.id} path:`, uav.path);
-        });
-      }
+      // Filter UAV paths to avoid no-fly zones 🚫✈️
+      const filteredUavs = filterUavPaths(snapshot.uavs || [], snapshot.noFlyZones || []);
+
+      // Optional: log UAV paths after filtering
+      filteredUavs.forEach((uav) => {
+        console.log(`✅ Safe path for UAV ${uav.id}:`, uav.path);
+      });
 
       setNoFlyZones(snapshot.noFlyZones || []);
-      setUavs(snapshot.uavs || []);
-      setUavCount(snapshot.uavs?.length || 0);
+      setUavs(filteredUavs);
+      setUavCount(filteredUavs.length || 0);
     } catch (err) {
       console.error("Error loading UAV data:", err);
     }
@@ -54,8 +62,9 @@ export default function UAVSimulation() {
   const refreshData = () => {
     if (!data) return;
     const snapshot = data.docs ? data.docs[0] : data;
+    const filteredUavs = filterUavPaths(snapshot.uavs || [], snapshot.noFlyZones || []);
     setNoFlyZones(snapshot.noFlyZones || []);
-    setUavs(snapshot.uavs || []);
+    setUavs(filteredUavs);
   };
 
   // 🔍 Handle location search + full reset
@@ -103,7 +112,7 @@ export default function UAVSimulation() {
             uavs={uavs}
             noFlyZones={noFlyZones}
             city={city}
-            mapCenter={mapCenter} // dynamically updates map
+            mapCenter={mapCenter}
           />
         </div>
 
@@ -126,7 +135,7 @@ export default function UAVSimulation() {
             setUavCount={setUavCount}
             handleAddUavs={() => {}}
             handleStart={handleStart}
-            handleLocationSearch={handleLocationSearch} // handles city input
+            handleLocationSearch={handleLocationSearch}
           />
         </div>
       </div>
