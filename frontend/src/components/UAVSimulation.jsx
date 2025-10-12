@@ -8,16 +8,32 @@ export default function UAVSimulation() {
   const [uavCount, setUavCount] = useState(0);
   const [noFlyZones, setNoFlyZones] = useState([]);
   const [data, setData] = useState(null);
-  const [city, setCity] = useState(""); // Current city or location
-  const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]); // Default center (India)
+  const [city, setCity] = useState("");
+  const [mapCenter, setMapCenter] = useState([20.5937, 78.9629]);
 
-  // ✅ Utility to filter UAV paths that collide with no-fly zones
+  // ✅ Utility to filter UAV paths that collide or touch no-fly zones
   const filterUavPaths = (uavs, noFlyZones) => {
-    const nfSet = new Set(noFlyZones.map(([r, c]) => `${r},${c}`));
-    return uavs.map((uav) => ({
-      ...uav,
-      path: uav.path.filter(([r, c]) => !nfSet.has(`${r},${c}`)),
-    }));
+    // Build a lookup including a 1-cell buffer around no-fly zones
+    const nfSet = new Set();
+    noFlyZones.forEach(([r, c]) => {
+      for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+          nfSet.add(`${r + dr},${c + dc}`);
+        }
+      }
+    });
+
+    return uavs.map((uav) => {
+      const safePath = uav.path.filter(([r, c]) => !nfSet.has(`${r},${c}`));
+
+      // If entire path blocked, keep UAV at its first safe coordinate
+      if (safePath.length === 0 && uav.path.length > 0) {
+        const [r, c] = uav.path[0];
+        safePath.push([r, c]);
+      }
+
+      return { ...uav, path: safePath };
+    });
   };
 
   // Load initial UAV data from API
@@ -40,10 +56,9 @@ export default function UAVSimulation() {
       console.log("📌 UAVs:", snapshot.uavs || []);
       console.log("🚫 No-Fly Zones:", snapshot.noFlyZones || []);
 
-      // Filter UAV paths to avoid no-fly zones 🚫✈️
+      // Filter UAV paths to avoid no-fly zones + 1-cell buffer 🚫✈️
       const filteredUavs = filterUavPaths(snapshot.uavs || [], snapshot.noFlyZones || []);
 
-      // Optional: log UAV paths after filtering
       filteredUavs.forEach((uav) => {
         console.log(`✅ Safe path for UAV ${uav.id}:`, uav.path);
       });
@@ -90,7 +105,6 @@ export default function UAVSimulation() {
         setNoFlyZones([]);
         setData(null);
 
-        // Reload API data
         loadInitialData();
 
         console.log(`✅ Map reset to ${cityName}:`, newCenter);

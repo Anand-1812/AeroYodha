@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import logo from "../../assets/Logo.png";
 import "./Controls.css";
 
@@ -8,9 +8,29 @@ const Controls = ({
   stop,
   uavs,
   handleAddUavs,
-  handleLocationSearch, // <-- optional callback for map integration
+  handleLocationSearch,
 }) => {
   const [location, setLocation] = useState("");
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [sessions, setSessions] = useState(0);
+
+  // Timer logic
+  useEffect(() => {
+    let timer;
+    if (running) {
+      timer = setInterval(() => {
+        setElapsedTime((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [running]);
+
+  // Handle session increment when simulation starts
+  useEffect(() => {
+    if (running) {
+      setSessions((prev) => prev + 1);
+    }
+  }, [running]);
 
   const handleSearch = () => {
     if (handleLocationSearch && location.trim() !== "") {
@@ -19,11 +39,22 @@ const Controls = ({
     }
   };
 
+  // Format elapsed time (hh:mm:ss)
+  const formatTime = (seconds) => {
+    const h = Math.floor(seconds / 3600)
+      .toString()
+      .padStart(2, "0");
+    const m = Math.floor((seconds % 3600) / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${h}:${m}:${s}`;
+  };
+
   return (
     <div
       style={{
         padding: 12,
-        borderBottom: "1px solid #ddd",
         display: "flex",
         gap: 12,
         alignItems: "center",
@@ -54,6 +85,7 @@ const Controls = ({
             Go
           </button>
         </div>
+
         <div className="upperbox">
           <div className="col d-flex justify-content-center mt-3 pb-2">
             <button
@@ -62,26 +94,49 @@ const Controls = ({
             >
               {running ? "Pause" : "Start"}
             </button>
-            <button className="end-btn rounded-pill ms-5" onClick={stop}>
+            <button
+              className="end-btn rounded-pill ms-5"
+              onClick={() => {
+                stop();
+                setElapsedTime(0);
+              }}
+            >
               Stop
             </button>
           </div>
         </div>
       </div>
 
-      {/* Location Input */}
-
       {/* Refresh */}
       <button
-        className="btn-generic rounded-pill mt-2"
+        className="refresh mt-2"
         onClick={() => window.location.reload()}
       >
         Refresh Site
       </button>
 
-      {/* Status */}
-      <div className="text-white opacity-75" style={{ marginLeft: "auto" }}>
-        <strong>UAVs:</strong> {uavs.length}
+      {/* Status Section */}
+      <div
+        className="text-white opacity-75"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          width: "100%",
+          maxWidth: 300,
+          marginTop: 10,
+        }}
+      >
+        <div>
+          <strong>UAVs:</strong> {uavs.length}
+        </div>
+        <div>
+          <strong>Sessions:</strong> {sessions}
+        </div>
+      </div>
+
+      {/* Timer Display */}
+      <div className="text-white timebox opacity-75">
+        {/* your content here */}⏱ Time Elapsed: {formatTime(elapsedTime)}
       </div>
     </div>
   );
