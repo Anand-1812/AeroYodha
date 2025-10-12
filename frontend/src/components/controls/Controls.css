@@ -227,5 +227,51 @@
     0 0 15px rgba(255, 255, 255, 0.08) inset;
 }
 
-/* =========================
+.timebox:hover {
+  transform: translateY(-1px);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(255, 255, 255, 0.08) inset;
+}
+
+.refresh:hover {
+  transform: translateY(-1px);
+  border-width: 0;
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.6),
+    0 0 15px rgba(255, 255, 255, 0.08) inset;
+}
+
+.refresh{
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 40px;
+  margin-top: 20px;
+  padding: 15px;
+  border-color: #2f2f2f;
+  background: rgba(20, 20, 20, 0.8);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+
+.timebox {
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 40px;
+  margin-top: 20px;
+  padding: 15px;
+  border-color: #2f2f2f;
+  background: rgba(20, 20, 20, 0.8);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.05) inset;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
 

@@ -146,7 +146,7 @@ export default function BasicMap({ running, uavs, noFlyZones = [], city }) {
     setGeofences(zoneRects);
   }, [noFlyZones, center]);
 
-  // ✅ === Generate 30x30 matrix grid ===
+  //=== Generate 30x30 matrix grid ===
   useEffect(() => {
     const points = [];
     for (let r = 0; r < matrixSize; r++) {
