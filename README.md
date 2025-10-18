@@ -7,7 +7,7 @@ A full-stack *UAV (Drone) simulation system* that models UAV movement on a real 
 ## 📸 Demo
 <img width="1919" height="1079" alt="Image" src="https://github.com/user-attachments/assets/94360900-d9d0-4c0c-aa6f-df6104e6b12d" />
 
-<img src="https://github.com/user-attachments/assets/2b859f49-e100-49c8-9bd1-f796dee57d90">
+<img src="https://github.com/user-attachments/assets/2b859f49-e100-49c8-9bd1-f796dee57d90" width="1919" height="1079">
 
 <img width="1900" alt="Simulation Map" src="https://user-images.githubusercontent.com/placeholder/map-demo.png" />
 
